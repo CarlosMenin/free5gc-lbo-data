@@ -1,33 +1,33 @@
 #!/usr/bin/env python3
 """
-Sobe/derruba o testbed free5gc v4.2.3 em um dos dois cenarios do TG2.
+Brings the free5GC v4.2.3 testbed up or down in one of the two scenarios.
 
-    python3 deploy.py up a       # cenario A: UPF centralizado (baseline)
-    python3 deploy.py up b       # cenario B: dUPF na borda com ULCL/LBO
-    python3 deploy.py down       # remove tudo do namespace
-    python3 deploy.py status     # visao rapida do estado
+    python3 deploy.py up a       # Scenario A: centralized UPF (baseline)
+    python3 deploy.py up b       # Scenario B: dUPF at the edge with ULCL/LBO
+    python3 deploy.py down       # removes everything from the namespace
+    python3 deploy.py status     # quick view of the state
 
-POR QUE A ORDEM IMPORTA (aprendido na marra em 24/08/2026)
-----------------------------------------------------------
-Aplicar os NFs todos de uma vez e dormir N segundos NAO funciona, e falha de um
-jeito que so' aparece muito depois:
+WHY THE ORDER MATTERS (learned the hard way)
+--------------------------------------------
+Applying all NFs at once and sleeping N seconds does NOT work, and it fails in
+a way that only shows up much later:
 
-  1. o NRF sobe e aceita conexao em ~1 s, mas so' responde de fato depois que o
-     MongoDB esta pronto -- ele grava o perfil do NF no banco;
-  2. os outros NFs sobem junto, chamam o NRF e levam 'context deadline
-     exceeded' (nao 'connection refused' -- o socket abre);
-  3. o NF que perde essa corrida fica com o NF instance ID VAZIO;
-  4. o registro do UE falha muito mais tarde, num lugar que nao tem relacao
-     obvia com isso:
-        AUSF sem ID -> UDM: "Mandatory IE [ausfInstanceId] is missing"
-        AMF  sem ID -> UDM: "Mandatory IE [AmfInstanceId] is missing"
-     e o UE ve so' "Initial Registration failed [CONGESTION]".
+  1. the NRF comes up and accepts connections in ~1 s, but only answers once
+     MongoDB is ready -- it writes the NF profile to the database;
+  2. the other NFs come up at the same time, call the NRF and get 'context
+     deadline exceeded' (not 'connection refused' -- the socket opens);
+  3. the NF that loses this race keeps an EMPTY NF instance ID;
+  4. the registration of the UE fails much later, in a place with no obvious
+     relation to it:
+        AUSF without ID -> UDM: "Mandatory IE [ausfInstanceId] is missing"
+        AMF  without ID -> UDM: "Mandatory IE [AmfInstanceId] is missing"
+     and the UE only sees "Initial Registration failed [CONGESTION]".
 
-Por isso cada NF e' aplicado na ordem de dependencia e so' se passa para o
-proximo depois que ele CONFIRMA registro no NRF -- o marcador universal e' a
-linha "OAuth2 setting receive from NRF:", que todo NF imprime exatamente quando
-o NRF responde. Se o registro nao fechar, o NF e' reiniciado uma vez antes de
-desistir, que e' a correcao manual para esse estado.
+Hence each NF is applied in dependency order, and the next one starts only
+after it CONFIRMS registration at the NRF -- the universal marker is the line
+"OAuth2 setting receive from NRF:", which every NF prints exactly when the NRF
+answers. If the registration does not complete, the NF is restarted once
+before giving up, which is the manual fix for this state.
 """
 import argparse
 import re
@@ -37,13 +37,13 @@ import time
 
 NS = "free5gc"
 
-# Ordem de dependencia do plano de controle. Nao reordene sem motivo:
-#   mongo  <- NRF (grava perfis) e webui (assinantes)
-#   NRF    <- todos os demais
+# Dependency order of the control plane. Do not reorder without a reason:
+#   mongo  <- NRF (writes profiles) and webui (subscribers)
+#   NRF    <- all the others
 #   UDR    <- UDM;  UDM <- AUSF/AMF/SMF;  NSSF/PCF <- AMF/SMF
-#   NEF    depois de UDR e PCF (consome os dois); so' o mec-af depende dele
-#   AMF    por ultimo entre os NFs de sinalizacao (consome quase todos)
-CADEIA_COMUM = [
+#   NEF    after UDR and PCF (consumes both); only mec-af depends on it
+#   AMF    last among the signaling NFs (consumes almost all of them)
+COMMON_CHAIN = [
     ("common/mongo.yaml", "free5gc-mongodb"),
     ("common/nrf.yaml", "free5gc-nrf"),
     ("common/udr.yaml", "free5gc-udr"),
@@ -56,8 +56,8 @@ CADEIA_COMUM = [
     ("common/webui.yaml", "free5gc-webui"),
 ]
 
-# UPFs primeiro, SMF depois: quem abre a associacao PFCP e' o SMF, entao ele
-# encontra os UPFs ja' de pe' em vez de depender do retransmit.
+# UPFs first, SMF after: the SMF opens the PFCP association, so it
+# finds the UPFs already up instead of depending on retransmission.
 SCENARIOS = {
     "a": [("scenario-a-cupf/upf.yaml", "free5gc-upf"),
           ("scenario-a-cupf/smf.yaml", "free5gc-smf")],
@@ -66,170 +66,170 @@ SCENARIOS = {
           ("scenario-b-dupf/smf.yaml", "free5gc-smf")],
 }
 
-# mec-service.yaml aparece duas vezes de proposito: ele contem DOIS
-# deployments (mec-app e remote-app) e sobe() so espera um por entrada.
-# O apply repetido e' idempotente. O remote-app e' o alvo da medicao
-# b-remoto; sem esperar por ele, um pod Unschedulable so' apareceria
-# no fim da campanha.
-#
-# mec-af depois do mec-service: ele vigia os Services com a label
-# tg2.mec/lbo=true e anuncia o ClusterIP ao NEF (LBO dinamico). Antes do
-# tester so' por clareza -- a regra vale tambem para sessoes ja' abertas.
+# mec-service.yaml appears twice on purpose: it contains TWO
+# deployments (mec-app and remote-app) and bring_up() waits for only one per entry.
+# The repeated apply is idempotent. remote-app is the target of the b-remote
+# measurement; without waiting for it, an Unschedulable pod would only show up
+# at the end of the campaign.
+# 
+# mec-af after mec-service: it watches the Services with the label
+# tg2.mec/lbo=true and announces the ClusterIP to the NEF (dynamic LBO). Before
+# the tester only for clarity -- the rule also applies to sessions already open.
 EXTRAS = [("mec/vr-app.yaml", None),
           ("mec/mec-service.yaml", "free5gc-mec-app"),
           ("mec/mec-service.yaml", "free5gc-remote-app"),
           ("mec/mec-af.yaml", "mec-af"),
           ("tester/ueransim.yaml", None)]
 
-# NFs que falam SBI e portanto registram no NRF. O UPF nao entra: ele nao e' um
-# NF de SBI, fala so' PFCP com o SMF.
-REGISTRAM_NO_NRF = {
+# NFs that speak SBI and therefore register at the NRF. The UPF is not one: it is not
+# an SBI NF, it only speaks PFCP with the SMF.
+REGISTER_AT_NRF = {
     "free5gc-udr", "free5gc-udm", "free5gc-ausf", "free5gc-nssf",
     "free5gc-pcf", "free5gc-nef", "free5gc-amf", "free5gc-smf", "free5gc-webui",
 }
 
-MARCADOR_OK = "OAuth2 setting receive from NRF"
-MARCADOR_ERRO = "register to NRF Error"
-NRF_PRONTO = "SBI server started"
+OK_MARK = "OAuth2 setting receive from NRF"
+ERROR_MARK = "register to NRF Error"
+NRF_READY = "SBI server started"
 
-VERDE, VERM, AMAR, CINZA, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[90m", "\033[0m"
+GREEN, RED, YELLOW, GREY, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[90m", "\033[0m"
 if not sys.stdout.isatty():
-    VERDE = VERM = AMAR = CINZA = RESET = ""
+    GREEN = RED = YELLOW = GREY = RESET = ""
 
 
 def run(cmd, check=True, quiet=False, timeout=180):
     if not quiet:
-        print(f"  {CINZA}$ {cmd}{RESET}")
+        print(f"  {GREY}$ {cmd}{RESET}")
     r = subprocess.run(cmd, shell=True, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=timeout)
     if r.stdout.strip() and not quiet:
         print("    " + r.stdout.strip().replace("\n", "\n    "))
     if r.returncode != 0 and check and not quiet:
-        print(f"    {VERM}ERRO:{RESET} {r.stderr.strip()}", file=sys.stderr)
+        print(f"    {RED}ERROR:{RESET} {r.stderr.strip()}", file=sys.stderr)
     return r
 
 
-def limpa_ansi(s):
+def strip_ansi(s):
     return re.sub(r"\x1b\[[0-9;]*m", "", s)
 
 
-def espera_rollout(deploy, timeout):
+def wait_rollout(deploy, timeout):
     r = run(f"kubectl -n {NS} rollout status deploy/{deploy} --timeout={timeout}s",
             check=False, quiet=True, timeout=timeout + 30)
     return r.returncode == 0
 
 
-def registrou_no_nrf(deploy):
-    """True se o NF confirmou registro DEPOIS do ultimo erro de registro.
+def registered_at_nrf(deploy):
+    """True if the NF confirmed registration AFTER the last registration error.
 
-    A ordem importa: um NF que errou, tentou de novo e conseguiu esta' bom; um
-    que so' errou, nao. Comparar presenca/ausencia dos dois marcadores nao
-    distingue os dois casos."""
+    The order matters: an NF that failed, retried and succeeded is fine; one
+    that only failed is not. Checking the presence/absence of the two markers
+    does not distinguish the two cases."""
     r = run(f"kubectl -n {NS} logs deploy/{deploy} --tail=400",
             check=False, quiet=True, timeout=60)
     if r.returncode != 0:
         return None
-    ult_ok = ult_erro = -1
-    for i, linha in enumerate(limpa_ansi(r.stdout).splitlines()):
-        if MARCADOR_OK in linha:
-            ult_ok = i
-        elif MARCADOR_ERRO in linha:
-            ult_erro = i
-    return ult_ok > ult_erro
+    last_ok = last_error = -1
+    for i, line in enumerate(strip_ansi(r.stdout).splitlines()):
+        if OK_MARK in line:
+            last_ok = i
+        elif ERROR_MARK in line:
+            last_error = i
+    return last_ok > last_error
 
 
-def espera_registro(deploy, timeout):
+def wait_registration(deploy, timeout):
     t0 = time.time()
     while time.time() - t0 < timeout:
-        if registrou_no_nrf(deploy):
+        if registered_at_nrf(deploy):
             return True
         time.sleep(3)
     return False
 
 
-def sobe(manifesto, deploy, args):
-    print(f"\n==> {manifesto}")
-    run(f"kubectl apply -f {manifesto}")
+def bring_up(manifest, deploy, args):
+    print(f"\n==> {manifest}")
+    run(f"kubectl apply -f {manifest}")
     if not deploy:
         return
 
     if deploy in ("free5gc-smf", "mec-af"):
-        # Config (SMF) e codigo (mec-af) vivem em ConfigMaps. Se so' eles
-        # mudaram, o apply NAO recria o pod e o processo segue com a versao
-        # antiga -- o LBO "nao ativa" sem nenhum erro. O restart forca a
-        # releitura; quando o template do pod tambem mudou, vira um rollout so'.
+        # Config (SMF) and code (mec-af) live in ConfigMaps. If only they
+        # changed, apply does NOT recreate the pod and the process keeps the old
+        # version -- the LBO "does not activate" without any error. The restart forces
+        # the reload; when the pod template also changed, it becomes a single rollout.
         run(f"kubectl -n {NS} rollout restart deploy/{deploy}",
             check=False, quiet=True)
 
-    if not espera_rollout(deploy, args.timeout):
-        print(f"    {VERM}{deploy} nao ficou pronto em {args.timeout}s{RESET}")
+    if not wait_rollout(deploy, args.timeout):
+        print(f"    {RED}{deploy} was not ready within {args.timeout}s{RESET}")
         run(f"kubectl -n {NS} get pods -l app={deploy} -o wide", check=False)
         sys.exit(1)
-    print(f"    {VERDE}pronto{RESET}")
+    print(f"    {GREEN}ready{RESET}")
 
     if deploy == "free5gc-nrf":
-        # O NRF nao registra em si mesmo: o gate dele e' o proprio SBI de pe'.
-        # Ele aceita conexao antes de conseguir gravar no Mongo, entao a folga
-        # abaixo e' o que evita a corrida que quebra todo o resto.
+        # The NRF does not register with itself: its gate is its own SBI being up.
+        # It accepts connections before it can write to Mongo, so the slack
+        # below is what avoids the race that breaks everything else.
         for _ in range(args.timeout // 2):
             r = run(f"kubectl -n {NS} logs deploy/{deploy} --tail=50",
                     check=False, quiet=True, timeout=60)
-            if NRF_PRONTO in limpa_ansi(r.stdout):
+            if NRF_READY in strip_ansi(r.stdout):
                 break
             time.sleep(2)
-        print(f"    {VERDE}SBI do NRF no ar{RESET}; folga de {args.espera}s antes dos demais")
-        time.sleep(args.espera)
+        print(f"    {GREEN}NRF SBI up{RESET}; slack of {args.wait_for}s before the others")
+        time.sleep(args.wait_for)
         return
 
-    if deploy in REGISTRAM_NO_NRF:
-        if espera_registro(deploy, args.timeout):
-            print(f"    {VERDE}registrado no NRF{RESET}")
+    if deploy in REGISTER_AT_NRF:
+        if wait_registration(deploy, args.timeout):
+            print(f"    {GREEN}registered at the NRF{RESET}")
         else:
-            # Estado conhecido: o NF perdeu a corrida e ficou com instance ID
-            # vazio. Reiniciar e' a correcao -- ele refaz o registro do zero.
-            print(f"    {AMAR}nao confirmou registro no NRF; reiniciando "
-                  f"{deploy} (instance ID vazio){RESET}")
+            # Known state: the NF lost the race and kept an empty instance ID.
+            # Restarting is the fix -- it redoes the registration from scratch.
+            print(f"    {YELLOW}did not confirm registration at the NRF; restarting "
+                  f"{deploy} (empty instance ID){RESET}")
             run(f"kubectl -n {NS} rollout restart deploy/{deploy}", check=False)
-            espera_rollout(deploy, args.timeout)
-            if espera_registro(deploy, args.timeout):
-                print(f"    {VERDE}registrado no NRF apos restart{RESET}")
+            wait_rollout(deploy, args.timeout)
+            if wait_registration(deploy, args.timeout):
+                print(f"    {GREEN}registered at the NRF after the restart{RESET}")
             else:
-                print(f"    {VERM}{deploy} segue sem registrar no NRF. "
-                      f"Nao adianta seguir: o registro do UE vai falhar com "
-                      f"MANDATORY_IE_MISSING la' na frente.{RESET}")
+                print(f"    {RED}{deploy} is still not registered at the NRF. "
+                      f"There is no point in going on: the registration of the UE will fail with "
+                      f"MANDATORY_IE_MISSING further ahead.{RESET}")
                 sys.exit(1)
 
-    time.sleep(args.espera)
+    time.sleep(args.wait_for)
 
 
 def up(args):
-    outro = "b" if args.scenario == "a" else "a"
+    other = "b" if args.scenario == "a" else "a"
 
-    print(f"==> Removendo plano de usuario do cenario {outro.upper()} (se existir)")
-    for manifesto, _ in SCENARIOS[outro]:
-        run(f"kubectl delete -f {manifesto} --ignore-not-found=true",
+    print(f"==> Removing the user plane of scenario {other.upper()} (if present)")
+    for manifest, _ in SCENARIOS[other]:
+        run(f"kubectl delete -f {manifest} --ignore-not-found=true",
             check=False, quiet=True)
 
-    print(f"\n{'='*70}\nPlano de controle, em ordem de dependencia\n{'='*70}")
-    for manifesto, deploy in CADEIA_COMUM:
-        sobe(manifesto, deploy, args)
+    print(f"\n{'='*70}\nControl plane, in dependency order\n{'='*70}")
+    for manifest, deploy in COMMON_CHAIN:
+        bring_up(manifest, deploy, args)
 
-    print(f"\n{'='*70}\nPlano de usuario - cenario {args.scenario.upper()}\n{'='*70}")
-    for manifesto, deploy in SCENARIOS[args.scenario]:
-        sobe(manifesto, deploy, args)
+    print(f"\n{'='*70}\nUser plane - scenario {args.scenario.upper()}\n{'='*70}")
+    for manifest, deploy in SCENARIOS[args.scenario]:
+        bring_up(manifest, deploy, args)
 
-    print(f"\n{'='*70}\nServicos MEC/remoto e tester\n{'='*70}")
-    for manifesto, deploy in EXTRAS:
-        sobe(manifesto, deploy, args)
+    print(f"\n{'='*70}\nMEC/remote services and tester\n{'='*70}")
+    for manifest, deploy in EXTRAS:
+        bring_up(manifest, deploy, args)
 
-    print(f"\n{VERDE}==> Pronto.{RESET} Verifique com: python3 deploy.py status")
+    print(f"\n{GREEN}==> Ready.{RESET} Check with: python3 deploy.py status")
 
 
 def down():
-    print("==> Removendo tudo do namespace")
-    todos = EXTRAS + SCENARIOS["a"] + SCENARIOS["b"] + CADEIA_COMUM
-    for manifesto, _ in todos:
-        run(f"kubectl delete -f {manifesto} --ignore-not-found=true",
+    print("==> Removing everything from the namespace")
+    all_of = EXTRAS + SCENARIOS["a"] + SCENARIOS["b"] + COMMON_CHAIN
+    for manifest, _ in all_of:
+        run(f"kubectl delete -f {manifest} --ignore-not-found=true",
             check=False, quiet=True)
 
 
@@ -238,18 +238,18 @@ def status():
     print()
     run(f"kubectl -n {NS} get svc")
     print()
-    print("==> NFs que NAO confirmaram registro no NRF (ID vazio, quebra o UE):")
-    ruins = [d for d in sorted(REGISTRAM_NO_NRF) if registrou_no_nrf(d) is False]
-    print("    " + (", ".join(ruins) if ruins else f"{VERDE}nenhum{RESET}"))
+    print("==> NFs that did NOT confirm registration at the NRF (empty ID, breaks the UE):")
+    bad = [d for d in sorted(REGISTER_AT_NRF) if registered_at_nrf(d) is False]
+    print("    " + (", ".join(bad) if bad else f"{GREEN}none{RESET}"))
     print()
-    print("==> Associacoes PFCP vistas pelo SMF (esperado: 1 UPF no A, 2 no B)")
-    # Filtro em Python, e nao com grep/tail: o cmd.exe do Windows nao tem nenhum dos dois.
+    print("==> PFCP associations seen by the SMF (expected: 1 UPF in A, 2 in B)")
+    # Filter in Python, not with grep/tail: the Windows cmd.exe has neither of them.
     r = run(f"kubectl -n {NS} logs deploy/free5gc-smf --tail=200", check=False, quiet=True)
-    linhas = [l for l in limpa_ansi(r.stdout).splitlines()
+    lines = [l for l in strip_ansi(r.stdout).splitlines()
               if re.search(r"pfcp|association", l, re.I)]
-    print("    " + ("\n    ".join(linhas[-20:]) if linhas else "(nada nas ultimas 200 linhas)"))
+    print("    " + ("\n    ".join(lines[-20:]) if lines else "(nothing in the last 200 lines)"))
     print()
-    print("==> LBO dinamico: Services com tg2.mec/lbo=true e o que o mec-af anunciou ao NEF")
+    print("==> Dynamic LBO: Services with tg2.mec/lbo=true and what mec-af announced to the NEF")
     run(f"kubectl -n {NS} get svc -l tg2.mec/lbo=true", check=False)
     run(f"kubectl -n {NS} logs deploy/mec-af --tail=8", check=False)
 
@@ -259,16 +259,16 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["up", "down", "status"])
     ap.add_argument("scenario", nargs="?", choices=["a", "b"],
-                    help="obrigatorio para 'up'")
-    ap.add_argument("--espera", type=int, default=10,
-                    help="folga em segundos entre um NF e o proximo (default: 10)")
+                    help="required for 'up'")
+    ap.add_argument("--wait-for", type=int, default=10,
+                    help="slack in seconds between one NF and the next (default: 10)")
     ap.add_argument("--timeout", type=int, default=180,
-                    help="timeout por NF, em segundos (default: 180)")
+                    help="timeout per NF, in seconds (default: 180)")
     args = ap.parse_args()
 
     if args.action == "up":
         if not args.scenario:
-            ap.error("'up' exige o cenario: a (cUPF) ou b (dUPF/ULCL)")
+            ap.error("'up' requires the scenario: a (cUPF) or b (dUPF/ULCL)")
         up(args)
     elif args.action == "down":
         down()

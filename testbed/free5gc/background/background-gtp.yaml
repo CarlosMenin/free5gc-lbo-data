@@ -1,0 +1,327 @@
+# Background traffic THROUGH THE USER PLANE (the advisor's suggestion).
+#
+# background/iperf.yaml congests the transport with an iperf that goes through no
+# UPF. Here the background is SUBSCRIBER traffic: a second UERANSIM (gNB + UE) on
+# brix-porvir-03 opens its own PDU session, and iperf3 goes down to it through the
+# GTP-U tunnel:
+#
+#   background-generator (petshopboys) --N6--> anchor UPF --N3/GTP-U--> background gNB (brix-03)
+#                                              A: upf  |  B: psa-upf
+#
+# This is what other users of the network do with the core: the background goes
+# through the central UPF (in A it is the SAME one as the experiment) and goes down
+# the backhaul encapsulated. In B the background UE belongs to ANOTHER cell, with no
+# dUPF: it anchors at the PSA-UPF and receives N3 directly from it -- it does not
+# touch the Edge Node (brix-05).
+#
+# The SLICE guarantees this path: the background UE uses sst 1 / sd 112233,
+# which in scenario-b-dupf/smf.yaml only the PSA-UPF serves (the I-UPF kept only
+# 010203, the slice of the experiment). In 010203 it would take the path gNB ->
+# I-UPF -> PSA-UPF and the background would go through the edge. In Scenario A the
+# central UPF serves both slices and nothing changes. mec-af announces mec-app only
+# in 010203.
+#
+# HOW THE BACKGROUND ENTERS THE SESSION: iperf3 in reverse mode (-R). The client runs
+# in the background pod, bound to the IP of the UE (-B), and opens the control
+# connection INSIDE the tunnel; the server, in background-generator, is the one that
+# sends the UDP. The outgoing packet leaves the UPF masqueraded (MASQUERADE of
+# upf-iptables.sh), so the reply comes back to the UPF, which returns it to the UE
+# through the tunnel. There is no route to 60.60.0.0/16 outside the pod of the UPF
+# -- sending directly to the IP of the UE would not arrive.
+#
+# UERANSIM DOES NOT ABSORB THIS RATE. It sustains 50-100 Mbps per session, and
+# worse: the queue between the thread that reads the GTP-U socket and the GTP task
+# of nr-gnb is a std::deque WITHOUT A LIMIT (NtsTask::push in src/utils/nts.cpp).
+# At ~800 Mbps the reading piles up faster than the task consumes, and the memory
+# of the gNB grows until the OOM of the brix. That is why the 'iperf' container
+# installs in the netns of the pod a drop of the excess BEFORE UERANSIM (chain
+# BACKGROUND-GTPU): the packet has already crossed the link when it is dropped,
+# which is what matters for the congestion; only ~2000 large pps and all small
+# packets (iperf control, TCP) reach UERANSIM. The counters of this chain are the
+# measurement of the background that crossed the link.
+#
+# Datagram size (1356 B, in the scripts): the GTP-U packet on the wire has
+# 1428 B of IP -- the SAME size as the 1400 B datagram of the direct background --
+# and fits the 1450 MTU of the Calico VXLAN without fragmentation:
+#     1356 + 8 UDP + 20 IP (inner) + 16 GTP-U + 8 UDP + 20 IP (outer) = 1428
+#
+# Applied by the campaign (--background-source gtp) and by scripts/background_gtp.py.
+#
+# The background UE (imsi-208930000090000) is OUTSIDE the range that
+# provision_subscribers.py writes by default, and the scripts register it apart,
+# with a high AMBR: the default session AMBR of provision_subscribers.py (100 Mbps
+# in the downlink) would become the ceiling of the background if the QoS of gtp5g is
+# on in the node (/proc/gtp5g/qos).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: background-ueransim-config
+  namespace: free5gc
+data:
+  # Same gnb.yaml as the tester (tester/ueransim.yaml), with ANOTHER gNB ID: 0x20
+  # with idLength 32 = gNB ID 2 (the tester is 0x10 = gNB ID 1). Two gNBs with the
+  # same ID at the AMF would knock each other down at NG Setup.
+  gnb.yaml: |
+    mcc: '208'
+    mnc: '93'
+
+    nci: '0x000000020'
+    idLength: 32
+    tac: 1              # matches supportTaiList[0].tac: 000001 of amf.yaml
+
+    linkIp: 127.0.0.1
+    ngapIp: '@POD_IP@'
+    gtpIp: '@POD_IP@'
+
+    amfConfigs:
+      - address: amf.free5gc.svc.cluster.local
+        port: 38412
+    slices:
+      - sst: 0x1
+        sd: 0x112233    # the slice of the background (see the header)
+
+    ignoreStreamIds: true
+
+  ue.yaml: |
+    # Background UE. scripts/background_gtp.py reads it from this manifest (IMSI = UE["supi"])
+    # and registers it in slice 112233 with a high AMBR.
+    supi: 'imsi-208930000090000'
+    mcc: '208'
+    mnc: '93'
+    protectionScheme: 0
+    homeNetworkPublicKey: '5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650'
+    homeNetworkPublicKeyId: 1
+    routingIndicator: '0000'
+
+    key: '8baf473f2f8fd09487cccbd7097c6862'
+    op: '8e27b6af0e692e750f32667a3b14605d'
+    opType: 'OPC'
+    amf: '8000'
+    imei: '356938035643803'
+    imeiSv: '4370816125816151'
+
+    tunNetmask: '255.255.255.0'
+
+    # false: the 'iperf' container must see uesimtun0 (same netns).
+    useNamespace: false
+
+    gnbSearchList:
+      - 127.0.0.1
+
+    uacAic:
+      mps: false
+      mcs: false
+    uacAcc:
+      normalClass: 0
+      class11: false
+      class12: false
+      class13: false
+      class14: false
+      class15: false
+
+    sessions:
+      - type: 'IPv4'
+        apn: 'internet'
+        slice:
+          sst: 0x01
+          sd: 0x112233
+
+    configured-nssai:
+      - sst: 0x01
+        sd: 0x112233
+    default-nssai:
+      - sst: 1
+        sd: 1
+
+    integrity:
+      IA1: true
+      IA2: true
+      IA3: true
+    ciphering:
+      EA1: true
+      EA2: true
+      EA3: true
+    integrityMaxRate:
+      uplink: 'full'
+      downlink: 'full'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: background-ueransim
+  namespace: free5gc
+  labels:
+    app: background-ueransim
+spec:
+  replicas: 1
+  # Recreate: two pods with the same gNB ID and the same IMSI running at the same time
+  # would fight at the AMF during the rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: background-ueransim
+  template:
+    metadata:
+      # No 'epc-mode': the tests find the tester and the NFs by this label, and
+      # this pod must not be mistaken for the tester of the experiment.
+      labels:
+        app: background-ueransim
+    spec:
+      # SECOND CELL, on a brix outside the experiment (the advisor's choice).
+      # Same segment as the brix machines (<edge-subnet>), behind the same switch: the
+      # GTP-U of the background goes down the same cloud -> edge link as the measured traffic.
+      # It cannot be brix-porvir-05 (Edge Node) nor brix-porvir-02 (tester):
+      # the background would worsen b-mec by CPU, not by congestion.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: brix-porvir-03
+        #nodetype: server
+      # The 'sleep infinity' of the iperf container is PID 1 and ignores SIGTERM: without
+      # this, each recreation of the pod (the scripts recreate it at each deployment of the
+      # scenario) would wait the default 30 s for nothing.
+      terminationGracePeriodSeconds: 3
+      volumes:
+        - name: background-config
+          configMap:
+            name: background-ueransim-config
+        - name: background-run
+          emptyDir: {}
+      containers:
+        - name: gnb
+          image: free5gc/ueransim:v4.2.3
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              sed "s/@POD_IP@/${POD_IP}/g" /config/gnb.yaml > /run/ueransim/gnb.yaml
+              echo "[gnb] ngapIp/gtpIp = ${POD_IP}"
+              exec ./nr-gnb -c /run/ueransim/gnb.yaml
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          # Safety net of the drop in chain BACKGROUND-GTPU: if it is missing, the
+          # unbounded queue of nr-gnb kills THIS container, not the brix.
+          resources:
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: background-config
+              mountPath: /config
+            - name: background-run
+              mountPath: /run/ueransim
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["NET_ADMIN"]
+        - name: ue
+          image: free5gc/ueransim:v4.2.3
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              cp /config/ue.yaml /run/ueransim/ue.yaml
+              until [ -f /run/ueransim/gnb.yaml ]; do sleep 1; done
+              sleep 5
+              exec ./nr-ue -c /run/ueransim/ue.yaml
+          resources:
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: background-config
+              mountPath: /config
+            - name: background-run
+              mountPath: /run/ueransim
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["NET_ADMIN"]
+        # ---------------------------------------------------------------
+        # iperf3 + drop of the excess. Same netns as the gNB and the UE: it sees
+        # uesimtun0 (the background client uses -B on the IP of the UE) and the INPUT
+        # through which GTP-U reaches nr-gnb.
+        #
+        # It also serves the TCP iperf3 of the capacity on eth0 of the pod (port 5201),
+        # OUTSIDE the tunnel: petshopboys -> brix-03 over the same wire as the GTP-U.
+        # ---------------------------------------------------------------
+        - name: iperf
+          image: nicolaka/netshoot:v0.13
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              # Idempotent: the netns belongs to the POD and survives a restart of the container.
+              iptables -N BACKGROUND-GTPU 2>/dev/null || iptables -F BACKGROUND-GTPU
+              # 1) small packets always pass: TCP of the iperf control, NGAP no
+              #    (it is SCTP), ACKs. Only the large UDP of the background is dropped.
+              iptables -A BACKGROUND-GTPU -m length --length 0:400 -j RETURN
+              # 2) a trickle of the background reaches the UE (~2000 pps, ~22 Mbps): proof
+              #    that the session delivers, within what UERANSIM can take.
+              iptables -A BACKGROUND-GTPU -m limit --limit 2000/sec --limit-burst 2000 -j RETURN
+              # 3) the rest has already crossed the link: drop it before nr-gnb.
+              iptables -A BACKGROUND-GTPU -j DROP
+              iptables -C INPUT -p udp --dport 2152 -j BACKGROUND-GTPU 2>/dev/null \
+                || iptables -I INPUT 1 -p udp --dport 2152 -j BACKGROUND-GTPU
+              iptables -nvx -L BACKGROUND-GTPU
+              iperf3 -s -p 5201 -D
+              exec sleep infinity
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN", "NET_RAW"]
+          ports:
+            - name: tcp-5201
+              protocol: TCP
+              containerPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: background-generator
+  namespace: free5gc
+  labels:
+    app: background-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: background-generator
+  template:
+    metadata:
+      labels:
+        app: background-generator
+    spec:
+      # SOURCE of the background, on the SAME NODE as the anchor UPF (upf in A, psa-upf in
+      # B). The N6 between this pod and the UPF does not leave the node; the only stretch that
+      # crosses the network is the GTP-U from the UPF to brix-03. If the anchor UPF changes
+      # node, change it here too -- the scripts check it.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        #nodetype: server
+      terminationGracePeriodSeconds: 3
+      containers:
+        - name: iperf
+          image: nicolaka/netshoot:v0.13
+          imagePullPolicy: IfNotPresent
+          # 5201: server of the background (the background UE connects with -R and this side
+          # sends). In a loop so that the scripts can kill it when turning the background off
+          # -- a guarantee that nothing keeps sending -- without taking the pod down.
+          # 5202 on the LOOPBACK: CPU control of the pilot (the generator works the
+          # same and nothing goes to the network), as in background/iperf.yaml.
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              iperf3 -s -p 5202 -B 127.0.0.1 -D
+              while true; do iperf3 -s -p 5201; sleep 1; done
+          ports:
+            - name: tcp-5201
+              protocol: TCP
+              containerPort: 5201
+            - name: udp-5201
+              protocol: UDP
+              containerPort: 5201

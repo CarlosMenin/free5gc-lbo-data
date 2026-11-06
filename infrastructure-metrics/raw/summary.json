@@ -1,0 +1,95 @@
+{
+ "node_cpu_by_mode": {
+  "lines": 750280,
+  "series": 40,
+  "queries": [
+   "sum by (nodename, mode) (node_cpu_seconds_total * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"})"
+  ]
+ },
+ "node_cpu_per_core_brix": {
+  "lines": 1800800,
+  "series": 96,
+  "queries": [
+   "node_cpu_seconds_total * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05\"}"
+  ]
+ },
+ "node_memory": {
+  "lines": 468925,
+  "series": 25,
+  "queries": [
+   "node_memory_MemTotal_bytes * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_memory_MemAvailable_bytes * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_memory_MemFree_bytes * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_memory_Buffers_bytes * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_memory_Cached_bytes * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}"
+  ]
+ },
+ "node_network": {
+  "lines": 1500560,
+  "series": 80,
+  "queries": [
+   "node_network_receive_bytes_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_receive_packets_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_receive_drop_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_receive_errs_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_transmit_bytes_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_transmit_packets_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_transmit_drop_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}",
+   "node_network_transmit_errs_total{device=~\"enp3s0|eno1|vxlan.calico\"} * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}"
+  ]
+ },
+ "node_load": {
+  "lines": 93785,
+  "series": 5,
+  "queries": [
+   "node_load1 * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"}"
+  ]
+ },
+ "node_softnet": {
+  "lines": 187570,
+  "series": 10,
+  "queries": [
+   "sum by (nodename) (node_softnet_dropped_total * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"})",
+   "sum by (nodename) (node_softnet_times_squeezed_total * on(instance) group_left(nodename) node_uname_info{nodename=~\"brix-porvir-02|brix-porvir-03|brix-porvir-05|petshopboys|metallica\"})"
+  ]
+ },
+ "pod_cpu": {
+  "lines": 340289,
+  "series": 8453,
+  "queries": [
+   "sum by (node, pod, container) (container_cpu_usage_seconds_total{namespace=\"free5gc\", container!=\"\"})"
+  ]
+ },
+ "pod_cpu_throttled": {
+  "lines": 0,
+  "series": 0,
+  "queries": [
+   "sum by (node, pod, container) (container_cpu_cfs_throttled_seconds_total{namespace=\"free5gc\", container!=\"\"})"
+  ]
+ },
+ "pod_memory": {
+  "lines": 340289,
+  "series": 8453,
+  "queries": [
+   "max by (node, pod, container) (container_memory_working_set_bytes{namespace=\"free5gc\", container!=\"\"})"
+  ]
+ },
+ "pod_network": {
+  "lines": 1824714,
+  "series": 43878,
+  "queries": [
+   "sum by (node, pod, interface) (container_network_receive_bytes_total{namespace=\"free5gc\"})",
+   "sum by (node, pod, interface) (container_network_transmit_bytes_total{namespace=\"free5gc\"})",
+   "sum by (node, pod, interface) (container_network_receive_packets_total{namespace=\"free5gc\"})",
+   "sum by (node, pod, interface) (container_network_transmit_packets_total{namespace=\"free5gc\"})",
+   "sum by (node, pod, interface) (container_network_receive_packets_dropped_total{namespace=\"free5gc\"})",
+   "sum by (node, pod, interface) (container_network_transmit_packets_dropped_total{namespace=\"free5gc\"})"
+  ]
+ },
+ "_period": {
+  "start": "2026-10-10T00:00:00-03:00",
+  "end": "2026-10-19T00:00:00-03:00",
+  "step_s": 30,
+  "exported_at": "2026-11-05T19:27:04.158029-03:00"
+ }
+}

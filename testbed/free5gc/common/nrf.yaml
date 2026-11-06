@@ -23,12 +23,12 @@ data:
         rootcert:
           pem: cert/root.pem
           key: cert/root.key
-        # OAuth2 entre NFs: NOVIDADE da v4.x (o free5gc-compose ja vem com oauth: true).
-        # Mantido DESLIGADO neste testbed por dois motivos:
-        #   1) exige distribuir certificados (cert/nrf.pem) para todos os NFs;
-        #   2) adiciona validacao de token no caminho de sinalizacao, o que seria
-        #      um fator de confusao nas medicoes de latencia de session setup.
-        # Para ligar: oauth: true aqui + nrfCertPem em cada NF + Secret com os certs.
+        # OAuth2 between NFs: NEW in v4.x (free5gc-compose already ships with oauth: true).
+        # Kept OFF in this testbed for two reasons:
+        #   1) it requires distributing certificates (cert/nrf.pem) to all NFs;
+        #   2) it adds token validation to the signaling path, which would be
+        #      a confounding factor in the session setup latency measurements.
+        # To turn it on: oauth: true here + nrfCertPem in each NF + a Secret with the certs.
         oauth: false
       DefaultPlmnId:
         mcc: 208
@@ -37,7 +37,7 @@ data:
         - nnrf-nfm
         - nnrf-disc
 
-      # Metricas Prometheus nativas (NOVIDADE da v4.x).
+      # Native Prometheus metrics (NEW in v4.x).
       metrics:
         enable: true
         scheme: http
@@ -79,7 +79,7 @@ spec:
         - name: nrf
           image: free5gc/nrf:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./nrf", "-c", "/configuracoes/nrfConfig.yaml"]
+          command: ["./nrf", "-c", "/nf-config/nrfConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -92,7 +92,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

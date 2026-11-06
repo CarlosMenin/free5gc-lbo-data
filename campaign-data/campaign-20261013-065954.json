@@ -1,0 +1,62 @@
+{
+ "start": "2026-10-13T06:59:54-0300",
+ "end": "2026-10-13T16:57:53-0300",
+ "command": [
+  "campaign.py",
+  "--rounds",
+  "30",
+  "--profile",
+  "vr-extreme",
+  "--background",
+  "0,50,80,95,99",
+  "--with-remote",
+  "--load-subscribers",
+  "5",
+  "--first-round",
+  "20"
+ ],
+ "args": {
+  "rounds": 30,
+  "profile": "vr-extreme",
+  "background": "0,50,80,95,99",
+  "background_source": "gtp",
+  "with_remote": true,
+  "duration": 60,
+  "warmup": 5,
+  "proof_duration": 10,
+  "capacity_duration": 10,
+  "load_subscribers": 5,
+  "attempts": 2,
+  "timeout": 300,
+  "concise": false,
+  "first_round": 20,
+  "redo": false,
+  "retry_failures": true,
+  "output": null,
+  "compare_only": null
+ },
+ "profiles": [
+  "vr-extreme"
+ ],
+ "background_levels_pct": [
+  0,
+  50,
+  80,
+  95,
+  99
+ ],
+ "python": "3.10.5",
+ "platform": "Windows-10-10.0.26300-SP0",
+ "git": null,
+ "kubectl": {
+  "clientVersion": "v1.25.4",
+  "serverVersion": "v1.33.2"
+ },
+ "result": {
+  "stopped_at": null,
+  "exit_code_by_profile": {
+   "vr-extreme": 1
+  },
+  "exit_code": 1
+ }
+}

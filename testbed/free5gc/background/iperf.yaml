@@ -1,0 +1,109 @@
+# Background traffic to CONGEST the cloud -> edge link, DIRECT mode
+# (campaign.py --background-source direct).
+#
+# The idea: what hurts the centralized scenario in a real network is the
+# congestion of the transport between the core and the edge. In Scenario A the
+# MEC traffic makes the trombone and goes down this link (central UPF -> UE and
+# central UPF -> mec-app); in Scenario B, with LBO, it does not even reach the
+# core. Congesting the link in the cloud -> edge direction should worsen a-mec
+# and leave b-mec unchanged.
+#
+# It is not emulation: iperf3 leaves from the SAME NODE as the anchor UPF
+# (petshopboys) and goes to a brix outside the experiment, over the same wires as
+# the measured traffic. It goes through no UPF -- what is meant to be congested is
+# the transport, not the user plane.
+#
+# CAUTION when reading: congestion only affects the application if iperf and the
+# application compete for the SAME QUEUE. The switch queues per output port, so
+# the background (port of brix-04) and the application (ports of brix-05 and
+# brix-02) only share a queue BEFORE the switch of the brix machines: on the NIC
+# of petshopboys or on the data center -> switch link. If the bottleneck is only
+# the port of brix-04, the application feels nothing. A pilot check (not part of
+# this artifact) verified this before the campaigns.
+#
+# Applied by campaign.py in direct mode. The paper uses the GTP-U background
+# (background/background-gtp.yaml); the direct mode is kept because campaign.py
+# still supports it.
+# netshoot image: it brings iperf3 (with -P multithread and -J output), ping,
+# pkill and /proc to read the UDP counters.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: background-iperf-server
+  namespace: free5gc
+  labels:
+    app: background-iperf-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: background-iperf-server
+  template:
+    metadata:
+      labels:
+        app: background-iperf-server
+    spec:
+      # RECEIVER at the EDGE, on a brix OUTSIDE the experiment.
+      #
+      # It cannot be brix-porvir-05 (Edge Node: I-UPF + mec-app) nor
+      # brix-porvir-02 (UE/RAN + vr_client): receiving ~1 Gbps of UDP costs CPU,
+      # and then b-mec would worsen by CPU contention, not by congestion.
+      # brix-porvir-03 is reserved for an Edge Node 2 (see the comment
+      # in scenario-b-dupf/i-upf.yaml).
+      #
+      # Same segment as the brix machines (<edge-subnet>), behind the same switch:
+      # this is what makes the background go down the same cloud -> edge link as
+      # the test traffic.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: brix-porvir-04
+        #nodetype: server
+      containers:
+        - name: iperf
+          image: nicolaka/netshoot:v0.13
+          imagePullPolicy: IfNotPresent
+          command: ["iperf3", "-s", "-p", "5201"]
+          ports:
+            - name: tcp-5201
+              protocol: TCP
+              containerPort: 5201
+            - name: udp-5201
+              protocol: UDP
+              containerPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: background-iperf-client
+  namespace: free5gc
+  labels:
+    app: background-iperf-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: background-iperf-client
+  template:
+    metadata:
+      labels:
+        app: background-iperf-client
+    spec:
+      # GENERATOR in the CLOUD, on the SAME NODE as the anchor UPF (upf in Scenario A,
+      # psa-upf in B). It leaves through the same NIC as the traffic of the UPF.
+      #
+      # The price: it competes for CPU with the central UPF, and this would hurt only
+      # Scenario A for the wrong reason. That is why the container also runs an
+      # iperf3 server on the LOOPBACK (port 5202): the pilot check (not part of this artifact) sent the background
+      # to the pod itself, without leaving to the network, and a-mec must not change. It
+      # is the CPU control.
+      #
+      # If the anchor UPF changes node, change it here too -- campaign.py checks it.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        #nodetype: server
+      containers:
+        - name: iperf
+          image: nicolaka/netshoot:v0.13
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "iperf3 -s -p 5202 -B 127.0.0.1 -D && exec sleep infinity"]

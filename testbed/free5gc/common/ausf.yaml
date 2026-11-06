@@ -70,7 +70,7 @@ spec:
         - name: ausf
           image: free5gc/ausf:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./ausf", "-c", "/configuracoes/ausfConfig.yaml"]
+          command: ["./ausf", "-c", "/nf-config/ausfConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -83,7 +83,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

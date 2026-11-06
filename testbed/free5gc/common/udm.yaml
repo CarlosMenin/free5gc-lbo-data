@@ -75,7 +75,7 @@ spec:
         - name: udm
           image: free5gc/udm:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./udm", "-c", "/configuracoes/udmConfig.yaml"]
+          command: ["./udm", "-c", "/nf-config/udmConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -88,7 +88,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

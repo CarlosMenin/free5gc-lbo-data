@@ -1,9 +1,9 @@
-# CENARIO B: I-UPF (dUPF) na BORDA.
-# Acumula dois papeis:
-#   1) Branching point / Uplink Classifier (ULCL): classifica o trafego de uplink
-#      e decide se ele sobe para o PSA central ou sai localmente;
-#   2) PSA de borda para o trafego do MEC: e' aqui que o Local Breakout acontece
-#      (por isso ele precisa de MASQUERADE, como um anchor de verdade).
+# SCENARIO B: I-UPF (dUPF) at the EDGE.
+# It has two roles:
+#   1) Branching point / Uplink Classifier (ULCL): it classifies the uplink traffic
+#      and decides whether it goes up to the central PSA or leaves locally;
+#   2) Edge PSA for the MEC traffic: this is where the Local Breakout happens
+#      (that is why it needs MASQUERADE, like a real anchor).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,7 +12,7 @@ metadata:
 data:
   upfConfig.yaml: |
     version: 1.0.3
-    description: I-UPF (dUPF de borda) - branching point + LBO para o MEC
+    description: I-UPF (edge dUPF) - branching point + LBO to the MEC
 
     pfcp:
       addr: i-upf-pod
@@ -22,15 +22,15 @@ data:
 
     gtpu:
       forwarder: gtp5g
-      # 0.0.0.0 cobre N3 (vindo do gNB) e N9 (indo para o PSA central).
-      # Necessario porque o go-upf so honra a PRIMEIRA entrada de ifList.
+      # 0.0.0.0 covers N3 (coming from the gNB) and N9 (going to the central PSA).
+      # Needed because go-upf only honors the FIRST entry of ifList.
       ifList:
         - addr: 0.0.0.0
           type: N3
 
-    # IMPORTANTE: o branching UPF precisa listar TODOS os pools de UE que
-    # trafegam por ele, senao a rota para o pool nao e' instalada no gtp5g.
-    # O pool 60.60.0.0/16 e' alocado pelo PSA-UPF central, mas passa por aqui.
+    # IMPORTANT: the branching UPF must list ALL UE pools that
+    # go through it, otherwise the route to the pool is not installed in gtp5g.
+    # The pool 60.60.0.0/16 is allocated by the central PSA-UPF, but it goes through here.
     dnnList:
       - dnn: internet
         cidr: 60.60.0.0/16
@@ -48,23 +48,23 @@ metadata:
 data:
   upf-iptables.sh: |
     #!/bin/bash
-    # SEM ISTO O PLANO DE DADOS NAO ANDA. O pacote de uplink chega na upfgtp,
-    # e' desencapsulado e precisa ser ROTEADO para fora pela eth0 -- ou seja,
-    # e' um pacote encaminhado, nao destinado localmente. Com ip_forward=0 o
-    # kernel o descarta ANTES da cadeia FORWARD, entao o "iptables -I FORWARD
-    # -j ACCEPT" abaixo nao salva. O sintoma e' mudo: RX cresce em
-    # /proc/net/dev da upfgtp, TX fica em zero e nada volta para o UE.
-    # A imagem free5gc/upf nao traz o binario sysctl (procps); escrever
-    # direto no /proc funciona porque o container e' privileged.
+    # WITHOUT THIS THE DATA PLANE DOES NOT WORK. The uplink packet arrives at upfgtp,
+    # is decapsulated and must be ROUTED out through eth0 -- that is,
+    # it is a forwarded packet, not one destined locally. With ip_forward=0 the
+    # kernel drops it BEFORE the FORWARD chain, so the "iptables -I FORWARD
+    # -j ACCEPT" below does not save it. The symptom is silent: RX grows in
+    # /proc/net/dev of upfgtp, TX stays at zero and nothing comes back to the UE.
+    # The free5gc/upf image does not bring the sysctl binary (procps); writing
+    # directly to /proc works because the container is privileged.
     echo 1 > /proc/sys/net/ipv4/ip_forward
 
-    # Este UPF faz breakout local para o MEC, entao precisa de NAT: o servico
-    # MEC responderia para 60.60.x.x (IP do UE) e nao saberia rotear de volta.
+    # This UPF does local breakout to the MEC, so it needs NAT: the MEC
+    # service would reply to 60.60.x.x (IP of the UE) and would not know how to route back.
     iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
     iptables -I FORWARD 1 -j ACCEPT
     iptables -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1400
 
-    ./upf -c /configuracoes/upfConfig.yaml
+    ./upf -c /nf-config/upfConfig.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -87,36 +87,36 @@ spec:
         prometheus: free5gc-monitor
     spec:
       hostname: i-upf-pod
-      # dUPF do EDGE NODE 1 (Figura 3 do TG1). Esta e' A peca da tese.
+      # dUPF of EDGE NODE 1 (Fig. 3 of the TG1 proposal). This is THE key piece of the thesis.
       #
-      # O Edge Node do TG1 e' UM no com dUPF + LBO + MEC domain dentro. Por isso
-      # este pod divide o brix-porvir-01 com o mec-app: o "traffic remains
-      # within the local edge environment" da Secao 4.1 e' afirmacao sobre o
-      # MESMO NO -- sob LBO o pacote nao chega a tocar um fio.
+      # The Edge Node of the proposal is ONE node with dUPF + LBO + MEC domain inside. That is why
+      # this pod shares brix-porvir-05 with mec-app: the "traffic remains
+      # within the local edge environment" of Section 4.1 is a statement about the
+      # SAME NODE -- under LBO the packet does not even touch a wire.
       #
-      # O gNB/UE (UERANSIM) fica em brix-porvir-02, no mesmo switch mas FORA
-      # desta caixa: o assinante nao mora dentro do host MEC, e a Figura 3
-      # desenha "UE/RAN Emulation" como caixa separada. O "co-located with the
-      # RAN" da Secao 1 continua valendo no sentido que a expressao tem em rede
-      # de operadora -- mesmo sitio, mesmo switch, do lado de ca' do backhaul.
+      # The gNB/UE (UERANSIM) stays on brix-porvir-02, on the same switch but OUTSIDE
+      # this box: the subscriber does not live inside the MEC host, and Fig. 3
+      # draws "UE/RAN Emulation" as a separate box. The "co-located with the
+      # RAN" of Section 1 still holds in the sense the expression has in an operator
+      # network -- same site, same switch, on this side of the backhaul.
       #
-      # Esta e' a variavel independente do experimento: no cenario A esta
-      # funcao nao existe e a ancora fica em petshopboys (Server Node), do outro
-      # lado do backhaul. Trocar o lugar da ancora -- e so' isso -- e' o que
-      # responde a RQ (iii).
+      # This is the independent variable of the experiment: in Scenario A this
+      # function does not exist and the anchor stays on petshopboys (Server Node), on the other
+      # side of the backhaul. Changing the place of the anchor -- and only that -- is what
+      # answers research question (iii) of the TG1 proposal.
       #
-      # O brix e' onde ha sudo, e este UPF precisa de root no NO, nao so' no
-      # pod: o gtp5g e' modulo de kernel (modprobe gtp5g) e nao existe por
-      # namespace de rede.
+      # The brix is where there is sudo, and this UPF needs root on the NODE, not only in the
+      # pod: gtp5g is a kernel module (modprobe gtp5g) and does not exist per
+      # network namespace.
       #
-      # Para um EDGE NODE 2 (a Figura 3 desenha dois), copie este arquivo com
-      # nodeSelector em brix-porvir-03 (o -02 e' o UE/RAN) -- mas veja que nao
-      # e' so' placement:
-      # exige um segundo gNB, um segundo grupo de UEs no ueRouting.yaml e a
-      # entrada correspondente em userplaneInformation/links do smf.yaml.
+      # For an EDGE NODE 2 (Fig. 3 draws two), copy this file with
+      # nodeSelector on brix-porvir-03 (-02 is the UE/RAN) -- but note that it is not
+      # only placement:
+      # it requires a second gNB, a second group of UEs in ueRouting.yaml and the
+      # corresponding entry in userplaneInformation/links of smf.yaml.
       nodeSelector:
         #kubernetes.io/arch: amd64
-        kubernetes.io/hostname: brix-porvir-01
+        kubernetes.io/hostname: brix-porvir-05
         #nodetype: server
       containers:
         - name: upf
@@ -136,7 +136,7 @@ spec:
               add: ["NET_ADMIN", "SYS_MODULE"]
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
             - name: iptables-script
               mountPath: /free5gc/script
             - name: dev-net-tun

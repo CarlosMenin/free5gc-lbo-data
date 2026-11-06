@@ -30,7 +30,7 @@ data:
           suppFeat: 3
         - serviceName: npcf-eventexposure
         - serviceName: npcf-ue-policy-control
-        - serviceName: npcf-callback   # NOVO na v4.x
+        - serviceName: npcf-callback   # NEW in v4.x
       mongodb:
         name: free5gc
         url: mongodb://mongo:27017
@@ -77,7 +77,7 @@ spec:
         - name: pcf
           image: free5gc/pcf:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./pcf", "-c", "/configuracoes/pcfConfig.yaml"]
+          command: ["./pcf", "-c", "/nf-config/pcfConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -90,7 +90,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

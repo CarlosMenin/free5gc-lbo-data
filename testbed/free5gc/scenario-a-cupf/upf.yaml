@@ -1,6 +1,6 @@
-# CENARIO A (baseline): UPF unico e CENTRALIZADO.
-# Todo o trafego do UE atravessa o backhaul ate o nucleo antes de chegar
-# a qualquer servico -- inclusive ao servico MEC que fica na borda.
+# SCENARIO A (baseline): single and CENTRALIZED UPF.
+# All traffic of the UE crosses the backhaul to the core before reaching
+# any service -- including the MEC service that is at the edge.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,10 +9,10 @@ metadata:
 data:
   upfConfig.yaml: |
     version: 1.0.3
-    description: UPF centralizado (PSA unico) - cenario A
+    description: Centralized UPF (single PSA) - Scenario A
 
     pfcp:
-      # NAO pode ser 0.0.0.0. Usa o hostname do pod (resolve via /etc/hosts).
+      # It CANNOT be 0.0.0.0. It uses the hostname of the pod (resolved through /etc/hosts).
       addr: upf-pod
       nodeID: upf.free5gc.svc.cluster.local
       retransTimeout: 1s
@@ -20,14 +20,14 @@ data:
 
     gtpu:
       forwarder: gtp5g
-      # NOTA (go-upf v4.2.3): o forwarder usa APENAS a PRIMEIRA entrada de ifList
-      # (internal/forwarder/driver.go faz break no primeiro item). Listar varios
-      # enderecos nao tem efeito -- por isso usamos 0.0.0.0, que cobre N3 e N9.
+      # NOTE (go-upf v4.2.3): the forwarder uses ONLY the FIRST entry of ifList
+      # (internal/forwarder/driver.go breaks at the first item). Listing several
+      # addresses has no effect -- that is why we use 0.0.0.0, which covers N3 and N9.
       ifList:
         - addr: 0.0.0.0
           type: N3
 
-    # Cada CIDR aqui vira uma rota instalada na interface gtp5g.
+    # Each CIDR here becomes a route installed on the gtp5g interface.
     dnnList:
       - dnn: internet
         cidr: 60.60.0.0/16
@@ -45,23 +45,23 @@ metadata:
 data:
   upf-iptables.sh: |
     #!/bin/bash
-    # SEM ISTO O PLANO DE DADOS NAO ANDA. O pacote de uplink chega na upfgtp,
-    # e' desencapsulado e precisa ser ROTEADO para fora pela eth0 -- ou seja,
-    # e' um pacote encaminhado, nao destinado localmente. Com ip_forward=0 o
-    # kernel o descarta ANTES da cadeia FORWARD, entao o "iptables -I FORWARD
-    # -j ACCEPT" abaixo nao salva. O sintoma e' mudo: RX cresce em
-    # /proc/net/dev da upfgtp, TX fica em zero e nada volta para o UE.
-    # A imagem free5gc/upf nao traz o binario sysctl (procps); escrever
-    # direto no /proc funciona porque o container e' privileged.
+    # WITHOUT THIS THE DATA PLANE DOES NOT WORK. The uplink packet arrives at upfgtp,
+    # is decapsulated and must be ROUTED out through eth0 -- that is,
+    # it is a forwarded packet, not one destined locally. With ip_forward=0 the
+    # kernel drops it BEFORE the FORWARD chain, so the "iptables -I FORWARD
+    # -j ACCEPT" below does not save it. The symptom is silent: RX grows in
+    # /proc/net/dev of upfgtp, TX stays at zero and nothing comes back to the UE.
+    # The free5gc/upf image does not bring the sysctl binary (procps); writing
+    # directly to /proc works because the container is privileged.
     echo 1 > /proc/sys/net/ipv4/ip_forward
 
-    # MASQUERADE e' obrigatorio: sem ele as respostas do DN nao sabem voltar
-    # para o pool de IP do UE (60.60.0.0/16).
+    # MASQUERADE is mandatory: without it the replies from the DN do not know how to go
+    # back to the IP pool of the UE (60.60.0.0/16).
     iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
     iptables -I FORWARD 1 -j ACCEPT
     iptables -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1400
 
-    ./upf -c /configuracoes/upfConfig.yaml
+    ./upf -c /nf-config/upfConfig.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -84,16 +84,16 @@ spec:
         prometheus: free5gc-monitor
     spec:
       hostname: upf-pod
-      # SERVER NODE (5G Core). Na Figura 3 do TG1 este e' o bloco "User Plane -
-      # Baseline: UPF (Centralized)", DENTRO da mesma caixa do Centralized
-      # Control Plane -- por isso ele fica na maquina dos NFs, e nao numa
-      # propria. O ponto do baseline e' justamente estar do outro lado do
-      # Backhaul/Transport Network em relacao ao Edge Node.
+      # SERVER NODE (5G Core). In Fig. 3 of the TG1 proposal this is the block "User Plane -
+      # Baseline: UPF (Centralized)", INSIDE the same box as the Centralized
+      # Control Plane -- that is why it stays on the machine of the NFs, and not on one
+      # of its own. The point of the baseline is precisely to be on the other side of the
+      # Backhaul/Transport Network with respect to the Edge Node.
       #
-      # E' este UPF que produz o "trombone" do cenario A: o trafego do UE sai
-      # do Edge Node, cruza o backhaul ate' aqui, e VOLTA para o MEC domain na
-      # borda. Mesmo destino do cenario B, caminho completamente diferente --
-      # e' a comparacao que a Secao 4.4 do TG1 define.
+      # It is this UPF that produces the "trombone" of Scenario A: the traffic of the UE leaves
+      # the Edge Node, crosses the backhaul to here, and comes BACK to the MEC domain at the
+      # edge. Same destination as Scenario B, a completely different path --
+      # it is the comparison that Section 4.4 of the TG1 proposal defines.
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/hostname: petshopboys
@@ -116,7 +116,7 @@ spec:
               add: ["NET_ADMIN", "SYS_MODULE"]
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
             - name: iptables-script
               mountPath: /free5gc/script
             - name: dev-net-tun

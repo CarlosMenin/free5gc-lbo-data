@@ -27,7 +27,7 @@ data:
         - namf-mt
         - namf-loc
         - namf-oam
-        - namf-callback   # NOVO na v4.x
+        - namf-callback   # NEW in v4.x
       servedGuamiList:
         - plmnId:
             mcc: 208
@@ -156,7 +156,7 @@ spec:
         - name: amf
           image: free5gc/amf:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./amf", "-c", "/configuracoes/amfConfig.yaml"]
+          command: ["./amf", "-c", "/nf-config/amfConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -172,7 +172,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

@@ -1,0 +1,157 @@
+{
+ "profile": "teleoperation",
+ "workload": {
+  "bitrate_mbps": 8,
+  "fps": 60,
+  "pose_hz": 500,
+  "mtu": 1200,
+  "description": "Teleoperation/telemedicine: 720p60 support video (~8 Mbps) with the CONTROL LOOP at 500 Hz. It inverts the pattern of the other profiles -- little downlink, very frequent uplink -- and is the case in which network latency matters more than throughput."
+ },
+ "executions": [
+  {
+   "execution": 1,
+   "proof": {
+    "mec": {
+     "delta": {
+      "upf": {
+       "rx_bytes": 780056,
+       "rx_pkts": 5001,
+       "tx_bytes": 10315200,
+       "tx_pkts": 8400
+      }
+     },
+     "frames": 599,
+     "poses": 5000
+    },
+    "remote": {
+     "delta": {
+      "upf": {
+       "rx_bytes": 780056,
+       "rx_pkts": 5001,
+       "tx_bytes": 10315200,
+       "tx_pkts": 8400
+      }
+     },
+     "frames": 600,
+     "poses": 5000
+    }
+   },
+   "paths": {
+    "a-mec": {
+     "label": "a-mec",
+     "server": "10.107.157.9:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.502,
+     "ul_window_s": 60.002,
+     "warmup_s": 5.0,
+     "pose_hz": 500.0,
+     "frames_complete": 3547,
+     "frames_partial": 53,
+     "dl_packets_rx_run": 50315,
+     "frames_incomplete_pct": 1.472,
+     "frames_in_stats": 3253,
+     "dl_packet_loss_pct": 0.1602,
+     "dl_throughput_mbps": 8.051,
+     "dl_continuity_pct": 99.98,
+     "ul_packets_tx": 29995,
+     "ul_pose_hz_real": 499.9,
+     "ul_throughput_mbps": 0.512,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.002,
+      "span_s": 54.993,
+      "frames_expected": 3300,
+      "dl_packets_rx": 46126,
+      "dl_packets_expected": 46200
+     },
+     "m2p_us": {
+      "min": 12858.8,
+      "p50": 15249.8,
+      "p95": 17774.919999999995,
+      "p99": 19109.724000000002,
+      "max": 21929.2,
+      "mean": 15426.2
+     },
+     "net_rtt_us": {
+      "min": 1078.5,
+      "p50": 2477.5,
+      "p95": 5116.6399999999985,
+      "p99": 5963.764,
+      "max": 8397.2,
+      "mean": 2719.7
+     },
+     "hold_us": {
+      "min": 11611.0,
+      "p50": 12674.0,
+      "p95": 13637.4,
+      "max": 17389.0,
+      "mean": 12706.5
+     },
+     "jitter_us": 997.8,
+     "jitter_net_us": 434.0,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 0,
+      "udp_in_errors": 0,
+      "ctxt_switches_involuntary": 264,
+      "clock_drift_us": -0.7
+     },
+     "_gtp": {
+      "upf": {
+       "rx_bytes": 4679979,
+       "rx_pkts": 30007,
+       "tx_bytes": 6795414312,
+       "tx_pkts": 4915673
+      },
+      "ue-tun": {
+       "rx_bytes": 61790504,
+       "rx_pkts": 50318,
+       "tx_bytes": 4679372,
+       "tx_pkts": 29998
+      }
+     },
+     "_order": 1,
+     "_srv": {
+      "frames_sent_total": 3600.0,
+      "frame_packets_total": 50400.0,
+      "frames_late_total": 0.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 29941.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.011429,
+      "sndbuf_bytes": 16777216.0
+     },
+     "_server_fps": 59.99800006666444,
+     "dl_packet_loss_srv_pct": 0.1687
+    }
+   },
+   "placement": {
+    "ueransim": "brix-porvir-02",
+    "upf": "petshopboys",
+    "mec-app": "brix-porvir-05",
+    "remote-app": "metallica",
+    "smf": "petshopboys",
+    "amf": "petshopboys"
+   },
+   "warnings": [
+    [
+     "general",
+     "socket buffer below the minimum (4096 kB) at 1 of 3 points:\n         remote-app (vr_server) @ metallica: 416 kB\n       What overflows the queue becomes 'loss' in the report without being loss at the UPF -- and if it\n       remains on one side only, the comparison between the paths reflects a difference of loss, not of path.\n       Run ON THE NODE (they are global sysctls; the container does not see them):\n         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216\n       To keep it after a reboot, write it to /etc/sysctl.d/99-tg2-vr.conf. On the core nodes (petshopboys, metallica),\n       where there is no sudo, the way out is to lower the load profile until both sides lose equally."
+    ]
+   ],
+   "output": null,
+   "seconds": 444.9,
+   "profile": "teleoperation",
+   "attempts": 1
+  }
+ ],
+ "failures": [],
+ "duration_s": 60.0,
+ "warmup_s": 5.0,
+ "repetitions": 1
+}

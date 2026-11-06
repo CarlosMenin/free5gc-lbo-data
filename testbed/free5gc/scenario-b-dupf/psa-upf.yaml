@@ -1,6 +1,6 @@
-# CENARIO B: PSA-UPF CENTRAL.
-# Anchor do caminho default (internet). Recebe trafego do I-UPF via N9 e
-# aloca o IP do UE. E' o "caminho longo" contra o qual o LBO e' comparado.
+# SCENARIO B: CENTRAL PSA-UPF.
+# Anchor of the default path (internet). It receives traffic from the I-UPF through N9 and
+# allocates the IP of the UE. It is the "long path" against which the LBO is compared.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,7 +9,7 @@ metadata:
 data:
   upfConfig.yaml: |
     version: 1.0.3
-    description: PSA-UPF central (anchor do caminho default) - cenario B
+    description: Central PSA-UPF (anchor of the default path) - Scenario B
 
     pfcp:
       addr: psa-upf-pod
@@ -19,7 +19,7 @@ data:
 
     gtpu:
       forwarder: gtp5g
-      # So recebe N9 (do I-UPF), nunca N3 direto do gNB.
+      # It only receives N9 (from the I-UPF), never N3 directly from the gNB.
       ifList:
         - addr: 0.0.0.0
           type: N9
@@ -41,21 +41,21 @@ metadata:
 data:
   upf-iptables.sh: |
     #!/bin/bash
-    # SEM ISTO O PLANO DE DADOS NAO ANDA. O pacote de uplink chega na upfgtp,
-    # e' desencapsulado e precisa ser ROTEADO para fora pela eth0 -- ou seja,
-    # e' um pacote encaminhado, nao destinado localmente. Com ip_forward=0 o
-    # kernel o descarta ANTES da cadeia FORWARD, entao o "iptables -I FORWARD
-    # -j ACCEPT" abaixo nao salva. O sintoma e' mudo: RX cresce em
-    # /proc/net/dev da upfgtp, TX fica em zero e nada volta para o UE.
-    # A imagem free5gc/upf nao traz o binario sysctl (procps); escrever
-    # direto no /proc funciona porque o container e' privileged.
+    # WITHOUT THIS THE DATA PLANE DOES NOT WORK. The uplink packet arrives at upfgtp,
+    # is decapsulated and must be ROUTED out through eth0 -- that is,
+    # it is a forwarded packet, not one destined locally. With ip_forward=0 the
+    # kernel drops it BEFORE the FORWARD chain, so the "iptables -I FORWARD
+    # -j ACCEPT" below does not save it. The symptom is silent: RX grows in
+    # /proc/net/dev of upfgtp, TX stays at zero and nothing comes back to the UE.
+    # The free5gc/upf image does not bring the sysctl binary (procps); writing
+    # directly to /proc works because the container is privileged.
     echo 1 > /proc/sys/net/ipv4/ip_forward
 
     iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
     iptables -I FORWARD 1 -j ACCEPT
     iptables -A FORWARD -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1400
 
-    ./upf -c /configuracoes/upfConfig.yaml
+    ./upf -c /nf-config/upfConfig.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -78,24 +78,24 @@ spec:
         prometheus: free5gc-monitor
     spec:
       hostname: psa-upf-pod
-      # SERVER NODE (5G Core) -- a mesma maquina do plano de controle.
+      # SERVER NODE (5G Core) -- the same machine as the control plane.
       #
-      # A Figura 3 do TG1 desenha uma caixa so', "Server Node (5G Core)",
-      # contendo o Centralized Control Plane (AMF/SMF) E o "User Plane -
-      # Baseline: UPF (Centralized)". No modelo ULCL do free5gc essa UPF
-      # centralizada e' exatamente o PSA: a sessao ancora aqui, e o dUPF da
-      # borda so' ramifica o que vai para o MEC. Por isso este pod fica junto
-      # dos NFs, e nao numa maquina propria.
+      # Fig. 3 of the TG1 proposal draws a single box, "Server Node (5G Core)",
+      # containing the Centralized Control Plane (AMF/SMF) AND the "User Plane -
+      # Baseline: UPF (Centralized)". In the ULCL model of free5gc this centralized
+      # UPF is exactly the PSA: the session anchors here, and the dUPF at the
+      # edge only branches what goes to the MEC. That is why this pod stays with
+      # the NFs, and not on a machine of its own.
       #
-      # E' o que faz o caminho remoto atravessar o Backhaul/Transport Network
-      # da figura: do Edge Node (<edge-subnet>) ate' aqui (<core-subnet>) o
-      # pacote cruza o roteador do campus.
+      # It is what makes the remote path cross the Backhaul/Transport Network
+      # of the figure: from the Edge Node (<edge-subnet>) to here (<core-subnet>) the
+      # packet crosses the campus router.
       #
-      # O hardware daqui e' muito melhor que o do dUPF na borda (petshopboys:
-      # 80 threads / 197 GB; brix: 4 threads / 3,8 GB). Isso NAO invalida a
-      # medida, mas define como ela deve ser lida: a ancora central esta sendo
-      # cobrada no seu melhor caso, entao o ganho medido para a borda e' um
-      # PISO, nao um teto. E e' fiel: nucleo de operadora roda em servidor.
+      # The hardware here is much better than that of the dUPF at the edge (petshopboys:
+      # 80 threads / 197 GB; brix: 4 threads / 3.8 GB). This does NOT invalidate the
+      # measurement, but it defines how it must be read: the central anchor is being
+      # charged in its best case, so the gain measured for the edge is a
+      # FLOOR, not a ceiling. And it is faithful: an operator core runs on servers.
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/hostname: petshopboys
@@ -118,7 +118,7 @@ spec:
               add: ["NET_ADMIN", "SYS_MODULE"]
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
             - name: iptables-script
               mountPath: /free5gc/script
             - name: dev-net-tun

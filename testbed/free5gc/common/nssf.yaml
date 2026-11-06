@@ -121,7 +121,7 @@ spec:
         - name: nssf
           image: free5gc/nssf:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./nssf", "-c", "/configuracoes/nssfConfig.yaml"]
+          command: ["./nssf", "-c", "/nf-config/nssfConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -134,7 +134,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

@@ -1,59 +1,59 @@
-# UERANSIM - emulacao de UE/gNB. SUBSTITUI o my5G-RANTester.
+# UERANSIM - UE/gNB emulation. It REPLACES my5G-RANTester.
 #
-# POR QUE A TROCA:
-#   O my5G-RANTester tem as libs do free5gc vendorizadas e congeladas em 2022
-#   (ultimo commit do upstream: ago/2022). Ele declara a IE 126 do NGAP
-#   (AdditionalUL-NGU-UP-TNLInformation) como um CHOICE unico
-#   (*UPTransportLayerInformation), que e' a forma do Release 15.
-#   O free5gc passou a emiti-la como LISTA (UPTransportLayerInformationList,
-#   Release 16) no commit 5a36c7e (24/03/2025), que entrou pela primeira vez
-#   numa release no SMF v1.4.0 (20/08/2025) -- ou seja, DEPOIS da v3.3.0 usada
-#   nos artigos de 2024 e ANTES da v4.2.3 deste testbed. Resultado:
+# WHY THE SWITCH:
+#   my5G-RANTester has the free5gc libs vendored and frozen in 2022
+#   (last upstream commit: Aug/2022). It declares IE 126 of NGAP
+#   (AdditionalUL-NGU-UP-TNLInformation) as a single CHOICE
+#   (*UPTransportLayerInformation), which is the Release 15 form.
+#   free5gc started to emit it as a LIST (UPTransportLayerInformationList,
+#   Release 16) in commit 5a36c7e (2025-03-24), which first entered
+#   a release in SMF v1.4.0 (2025-08-20) -- that is, AFTER the v3.3.0 used
+#   in the 2024 papers and BEFORE the v4.2.3 of this testbed. Result:
 #       [GNB][NGAP] Error in decode Pdu Session Resource Setup Request Transfer
 #       panic: index out of range [0] with length 0    (handler.go:354)
-#   O registro NAS inteiro funcionava; so' o PDU session setup quebrava.
+#   The whole NAS registration worked; only the PDU session setup broke.
 #
-#   A imagem free5gc/ueransim:v4.2.3 traz o UERANSIM v3.3.0, publicada pelo
-#   proprio projeto free5gc no mesmo dia das demais imagens v4.2.3. Nesse tag,
-#   o IE 126 esta amarrado a asn_DEF_ASN_NGAP_UPTransportLayerInformationList
-#   (R16), entao decodifica o que a v4.2.3 emite.
+#   The free5gc/ueransim:v4.2.3 image brings UERANSIM v3.3.0, published by the
+#   free5gc project itself on the same day as the other v4.2.3 images. In this tag,
+#   IE 126 is bound to asn_DEF_ASN_NGAP_UPTransportLayerInformationList
+#   (R16), so it decodes what v4.2.3 emits.
 #
-# O QUE SE PERDE: o output "[ANALYTICS]" com timestamps do my5G-RANTester. Para
-# latencia de session setup use os histogramas Prometheus nativos da v4.x, ja
-# habilitados no SMF/AMF (metrics.enable + ServiceMonitor):
+# WHAT IS LOST: the "[ANALYTICS]" output with timestamps of my5G-RANTester. For
+# session setup latency use the native Prometheus histograms of v4.x, already
+# enabled in the SMF/AMF (metrics.enable + ServiceMonitor):
 #     free5gc_sbi_inbound_request_duration_seconds
 #
-# O NUMERO DE UEs E' DEFINIDO AQUI, nao por 'kubectl scale' em tempo de
-# execucao: 'replicas' abaixo e' quantos pods de tester sobem, e NUM_UE no
-# container 'ue' e' quantos IMSIs sequenciais cada pod registra (limite de 512
-# por processo nr-ue). O teste le esse valor do StatefulSet e segue direto.
-# Lembre que o ULCL so' se aplica aos IMSIs listados em ueRouting.yaml --
-# para mais de 5 UEs, regere a lista com scripts/gen-uerouting.py.
+# THE NUMBER OF UEs IS DEFINED HERE, not by 'kubectl scale' at run
+# time: 'replicas' below is how many tester pods come up, and NUM_UE in the
+# 'ue' container is how many sequential IMSIs each pod registers (limit of 512
+# per nr-ue process). The test reads this value from the StatefulSet and goes on.
+# Remember that the ULCL only applies to the IMSIs listed in ueRouting.yaml --
+# for more than 5 UEs, regenerate the list with scripts/gen_uerouting.py.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ueransim-config
   namespace: free5gc
 data:
-  # ngapIp/gtpIp levam @POD_IP@ porque o UERANSIM nao expande variavel de
-  # ambiente no YAML: o container faz o sed no boot (Downward API).
-  # linkIp fica em 127.0.0.1 -- o nr-gnb e o nr-ue sao containers do MESMO pod,
-  # entao compartilham network namespace e o radio-link simulado nao sai do loopback.
+  # ngapIp/gtpIp carry @POD_IP@ because UERANSIM does not expand environment
+  # variables in the YAML: the container does the sed at boot (Downward API).
+  # linkIp stays at 127.0.0.1 -- nr-gnb and nr-ue are containers of the SAME pod,
+  # so they share the network namespace and the simulated radio link does not leave the loopback.
   gnb.yaml: |
     mcc: '208'
     mnc: '93'
 
     nci: '0x000000010'
     idLength: 32
-    tac: 1              # casa com supportTaiList[0].tac: 000001 do amf.yaml
+    tac: 1              # matches supportTaiList[0].tac: 000001 of amf.yaml
 
     linkIp: 127.0.0.1
     ngapIp: '@POD_IP@'
     gtpIp: '@POD_IP@'
 
     amfConfigs:
-      - address: amf.free5gc.svc.cluster.local   # FQDN funciona: o SCTP do
-        port: 38412                              # UERANSIM resolve via getaddrinfo
+      - address: amf.free5gc.svc.cluster.local   # an FQDN works: the SCTP of
+        port: 38412                              # UERANSIM resolves it through getaddrinfo
     slices:
       - sst: 0x1
         sd: 0x010203
@@ -61,8 +61,8 @@ data:
     ignoreStreamIds: true
 
   ue.yaml: |
-    # IMSI inicial. Casa com o insere-dados.py e com os members do
-    # ueRouting.yaml do cenario B.
+    # First IMSI. It matches provision_subscribers.py and the members of
+    # ueRouting.yaml of Scenario B.
     supi: 'imsi-208930000000000'
     mcc: '208'
     mnc: '93'
@@ -71,7 +71,7 @@ data:
     homeNetworkPublicKeyId: 1
     routingIndicator: '0000'
 
-    # Mesmas credenciais gravadas no Mongo pelo scripts/insere-dados.py.
+    # Same credentials written to Mongo by scripts/provision_subscribers.py.
     key: '8baf473f2f8fd09487cccbd7097c6862'
     op: '8e27b6af0e692e750f32667a3b14605d'
     opType: 'OPC'
@@ -81,8 +81,8 @@ data:
 
     tunNetmask: '255.255.255.0'
 
-    # false e' ESSENCIAL: com true o UERANSIM cria a uesimtun0 num netns
-    # dedicado e o sidecar vr-client deixaria de enxergar a interface.
+    # false is ESSENTIAL: with true UERANSIM creates uesimtun0 in a dedicated
+    # netns and the vr-client sidecar would no longer see the interface.
     useNamespace: false
 
     gnbSearchList:
@@ -145,38 +145,38 @@ spec:
         app: free5gc-ueransim
         prometheus: free5gc-monitor
     spec:
-      # Caixa "UE / RAN Emulation" da Figura 3 do TG1 -- no PROPRIO, FORA do
+      # "UE / RAN Emulation" box of Fig. 3 of the TG1 proposal -- a node of ITS OWN, OUTSIDE the
       # Edge Node.
       #
-      # A figura desenha essa caixa separada das caixas dos Edge Nodes, e o
-      # motivo e' arquitetural, nao de diagramacao: o assinante NAO mora dentro
-      # do host MEC. Ele chega pela rede de acesso. Rodar o UE no mesmo no do
-      # mec-app faria o "usuario" ser residente da infraestrutura que ele
-      # consome, e o caminho medido comecaria dentro do proprio Edge Node.
+      # The figure draws this box apart from the boxes of the Edge Nodes, and the
+      # reason is architectural, not layout: the subscriber does NOT live inside
+      # the MEC host. It arrives through the access network. Running the UE on the same node as
+      # mec-app would make the "user" a resident of the infrastructure it
+      # consumes, and the measured path would start inside the Edge Node itself.
       #
-      # Fica em brix-porvir-02: MESMO segmento dos brix (<edge-subnet>, 1 hop
-      # de switch), portanto ainda do lado de CA' do Backhaul/Transport Network.
-      # Isso importa -- se o tester fosse para o nucleo, o proprio acesso radio
-      # atravessaria o transporte, que e' exatamente o que a arquitetura diz que
-      # NAO acontece.
+      # It stays on brix-porvir-02: SAME segment as the brix machines (<edge-subnet>, 1 switch
+      # hop), so still on THIS side of the Backhaul/Transport Network.
+      # This matters -- if the tester went to the core, the radio access itself
+      # would cross the transport, which is exactly what the architecture says
+      # does NOT happen.
       #
-      # O que se abre mao: o gNB deixa de dividir a placa-mae com o dUPF e passa
-      # a ficar a 1 hop de switch dele. "Co-located with the RAN" (Secao 1)
-      # continua valendo no sentido que a expressao tem em rede de operadora --
-      # mesmo sitio, mesmo switch --; num cell site real o radio e o appliance
-      # de UPF tambem sao caixas distintas. E o custo e' comum aos dois
-      # cenarios: em A o N3 atravessa o backhaul de qualquer jeito.
+      # What is given up: the gNB no longer shares the motherboard with the dUPF and comes
+      # to be 1 switch hop from it. "Co-located with the RAN" (Section 1)
+      # still holds in the sense the expression has in an operator network --
+      # same site, same switch --; in a real cell site the radio and the UPF appliance
+      # are also separate boxes. And the cost is common to both
+      # scenarios: in A the N3 crosses the backhaul anyway.
       #
-      # O que se ganha, alem da semantica: o pod mais pesado do experimento
-      # (nr-gnb + nr-ue em espaco de usuario + o vr_client) para de disputar os
-      # 2 nucleos fisicos do Edge Node com o gtp5g e com o vr-server. Foi essa
-      # disputa que travou o perfil de 100 Mbps na campanha de 08/09/2026 -- o
-      # gargalo medido era o vr-server, que sustentou 53 dos 90 fps. Com o Edge
-      # Node aliviado, esse degrau volta a ser testavel.
+      # What is gained, besides the semantics: the heaviest pod of the experiment
+      # (nr-gnb + nr-ue in user space + vr_client) stops competing for the
+      # 2 physical cores of the Edge Node with gtp5g and vr-server. It was this
+      # contention that stalled the 100 Mbps profile in an early campaign -- the
+      # measured bottleneck was vr-server, which sustained 53 of the 90 fps. With the Edge
+      # Node relieved, this step becomes testable again.
       #
-      # E' aqui tambem que o cliente VR mede: o SO_RCVBUF dele depende de
-      # net.core.rmem_max, sysctl global do NO. Por isso o tester precisa de um
-      # brix (onde ha sudo), e nao de um no do nucleo.
+      # This is also where the VR client measures: its SO_RCVBUF depends on
+      # net.core.rmem_max, a global sysctl of the NODE. That is why the tester needs a
+      # brix (where there is sudo), and not a core node.
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/hostname: brix-porvir-02
@@ -185,20 +185,20 @@ spec:
         - name: ueransim-config
           configMap:
             name: ueransim-config
-        # O configMap monta read-only e o sed precisa escrever; os configs
-        # renderizados vao para ca.
+        # The configMap mounts read-only and the sed needs to write; the rendered
+        # configs go here.
         - name: ueransim-run
           emptyDir: {}
         - name: vr-app
           configMap:
             name: vr-app
-        # Resultados das corridas (CSV/JSON). Sao copiados para fora com
-        # 'kubectl cp' ao fim de cada campanha.
+        # Results of the runs (CSV/JSON). They are copied out with
+        # 'kubectl cp' at the end of each campaign.
         - name: vr-results
           emptyDir: {}
       containers:
         # ---------------------------------------------------------------
-        # gNB: fala N2 (NGAP/SCTP) com a AMF e N3 (GTP-U) com o UPF.
+        # gNB: speaks N2 (NGAP/SCTP) with the AMF and N3 (GTP-U) with the UPF.
         # ---------------------------------------------------------------
         - name: gnb
           image: free5gc/ueransim:v4.2.3
@@ -225,9 +225,9 @@ spec:
             capabilities:
               add: ["NET_ADMIN"]
         # ---------------------------------------------------------------
-        # UE: cria a interface de tunel uesimtun0 no netns do POD.
-        # NUM_UE > 1 gera IMSIs sequenciais a partir do supi do ue.yaml
-        # (uesimtun0, uesimtun1, ...). Limite de 512 por processo nr-ue.
+        # UE: creates the tunnel interface uesimtun0 in the netns of the POD.
+        # NUM_UE > 1 generates sequential IMSIs from the supi of ue.yaml
+        # (uesimtun0, uesimtun1, ...). Limit of 512 per nr-ue process.
         # ---------------------------------------------------------------
         - name: ue
           image: free5gc/ueransim:v4.2.3
@@ -237,8 +237,8 @@ spec:
             - |
               set -e
               cp /config/ue.yaml /run/ueransim/ue.yaml
-              # O nr-gnb precisa estar com o radio-link no ar antes do nr-ue
-              # tentar registrar; sem isto o UE falha no primeiro attach.
+              # nr-gnb must have the radio link up before nr-ue
+              # tries to register; without this the UE fails at the first attach.
               until [ -f /run/ueransim/gnb.yaml ]; do sleep 1; done
               sleep 5
               exec ./nr-ue -c /run/ueransim/ue.yaml -n "${NUM_UE}"
@@ -255,13 +255,13 @@ spec:
             capabilities:
               add: ["NET_ADMIN"]
         # ---------------------------------------------------------------
-        # Sidecar do cliente VR. Compartilha o NETWORK NAMESPACE com o gNB e o
-        # UE (containers do mesmo pod compartilham), entao enxerga a uesimtun0
-        # e consegue mandar trafego POR DENTRO da sessao PDU -- sem isso a
-        # medida sairia pela eth0 do pod e nao passaria pelo UPF nenhum.
+        # Sidecar of the VR client. It shares the NETWORK NAMESPACE with the gNB and the
+        # UE (containers of the same pod share it), so it sees uesimtun0
+        # and can send traffic INSIDE the PDU session -- without that the
+        # measurement would leave through eth0 of the pod and go through no UPF.
         #
-        # Fica dormindo; a campanha o aciona com 'kubectl exec'. A rota do
-        # tunel e os comandos de medicao estao em scripts/test-cenario-b.py.
+        # It stays asleep; the campaign triggers it with 'kubectl exec'. The tunnel
+        # route and the measurement commands are in scripts/run_scenario_b.py.
         # ---------------------------------------------------------------
         - name: vr-client
           image: python:3.12-slim

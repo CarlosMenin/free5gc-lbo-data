@@ -1,69 +1,70 @@
 #!/usr/bin/env python3
 """
-mec-af -- Application Function (AF) do TG2: Local Breakout com IP DINAMICO.
+mec-af -- Application Function (AF) of the testbed: local breakout with a DYNAMIC IP.
 
-Resolve por DNS os servicos MEC listados em SERVICES e, para cada um, mantem
-uma assinatura de Traffic Influence no NEF do free5gc (TS 29.522,
-/3gpp-traffic-influence/v1). O nucleo faz o resto:
+It resolves by DNS the MEC services listed in SERVICES and, for each one, keeps
+a Traffic Influence subscription at the NEF of free5GC (TS 29.522,
+/3gpp-traffic-influence/v1). The core does the rest:
 
     mec-app.free5gc.svc.cluster.local --DNS--> mec-af --POST/PUT/DELETE--> NEF
-        NEF --PUT influenceData--> UDR --notifica por sessao--> PCF
+        NEF --PUT influenceData--> UDR --notifies per session--> PCF
         PCF --SmPolicyUpdateNotify--> SMF --PFCP Session Modification--> I-UPF
-        I-UPF instala o PDR: SDF = ClusterIP do servico, rota = DNAI "mec"
+        I-UPF installs the PDR: SDF = ClusterIP of the service, route = DNAI "mec"
 
-O IP do servico MEC vira um dado de RUNTIME: o k8s aloca o que quiser, o AF
-descobre pelo CoreDNS e anuncia, e o branch ULCL aparece tanto nas sessoes PDU
-ja' abertas quanto nas novas. Nada de ClusterIP literal no ueRouting.yaml,
-nada de reiniciar o SMF.
+The IP of the MEC service becomes RUNTIME data: Kubernetes allocates whatever
+it wants, the AF discovers it through CoreDNS and announces it, and the ULCL
+branch appears both in PDU sessions already open and in new ones. No literal
+ClusterIP in ueRouting.yaml, no SMF restart.
 
-POR QUE DNS E NAO A API DO KUBERNETES
--------------------------------------
-Todo o resto do testbed ja' se enderecca por nome (o smfcfg aponta os UPFs em
-i-upf.free5gc.svc.cluster.local, os NFs acham o NRF assim), entao o AF usa a
-mesma fonte de verdade: o A record de um Service e' exatamente o ClusterIP que
-ele tem agora. Em troca, este AF NAO precisa de ServiceAccount, Role nem
-RoleBinding -- ele nao fala com a API do cluster, e portanto nao depende de
-permissao de RBAC que a conta do testbed pode nao ter.
+WHY DNS AND NOT THE KUBERNETES API
+----------------------------------
+The rest of the testbed already addresses itself by name (smfcfg points to the
+UPFs at i-upf.free5gc.svc.cluster.local, the NFs find the NRF this way), so the
+AF uses the same source of truth: the A record of a Service is exactly its
+current ClusterIP. In exchange, this AF needs NO ServiceAccount, Role or
+RoleBinding -- it does not talk to the cluster API, so it does not depend on
+RBAC permissions that the testbed account may not have.
 
-O que se perde: descobrir servicos por label, e reagir no instante da mudanca.
-Nenhum dos dois importa aqui. A lista de servicos de borda do experimento e'
-conhecida (esta' em SERVICES) e o ClusterIP so' muda quando o Service e'
-recriado, o que acontece no deploy. Com POLL_S segundos de sondagem a regra
-nova chega bem antes de a campanha comecar -- e, o que interessa para o TG2,
-chega TAMBEM em sessoes PDU que ja' estao abertas.
+What is lost: discovering services by label, and reacting at the instant of a
+change. Neither matters here. The list of edge services of the experiment is
+known (it is in SERVICES) and the ClusterIP only changes when the Service is
+recreated, which happens at deployment. With POLL_S seconds of polling, the new
+rule arrives well before the campaign starts -- and, what matters here, it
+ALSO reaches PDU sessions that are already open.
 
-Duas particularidades do NEF do free5gc moldam o desenho:
+Two particularities of the free5GC NEF shape the design:
 
-  * ele guarda as assinaturas SO' EM MEMORIA, entao um NEF reiniciado perde
-    todas. Como a listagem devolve o campo "self" (com o id), este AF ADOTA
-    a cada ciclo o que ja' existe sob o seu AF_ID em vez de recriar. Sem isso
-    a campanha com --repeticoes acumularia uma assinatura nova por rodada;
-  * o registro correspondente no UDR ganha um UUID novo a cada POST, entao um
-    NEF que reinicia deixa registros orfaos la' (com o mesmo SDF). Cada orfao
-    vira uma PCC rule duplicada em toda sessao. Por isso o AF varre o UDR
-    antes de (re)criar assinaturas e apaga o que tem a assinatura dele
-    (AnyUE + DNN + DNAI + SDF no formato daqui). E' o unico contato direto
-    com o UDR; todo o resto passa pelo NEF, como manda a 3GPP.
+  * it keeps the subscriptions ONLY IN MEMORY, so a restarted NEF loses all of
+    them. Since the listing returns the "self" field (with the id), this AF
+    ADOPTS at each cycle what already exists under its AF_ID instead of
+    recreating it. Without this, a campaign with --repetitions would accumulate
+    a new subscription per round;
+  * the corresponding record in the UDR gets a new UUID at each POST, so a NEF
+    that restarts leaves orphan records there (with the same SDF). Each orphan
+    becomes a duplicated PCC rule in every session. Hence the AF sweeps the UDR
+    before (re)creating subscriptions and deletes what carries its signature
+    (AnyUE + DNN + DNAI + SDF in the format used here). It is the only direct
+    contact with the UDR; everything else goes through the NEF, as 3GPP specifies.
 
-So' biblioteca padrao: roda em python:3.12-slim sem pip e sem credencial
-nenhuma montada no pod.
+Standard library only: runs on python:3.12-slim with no pip and no credentials
+mounted in the pod.
 
-Variaveis de ambiente (todas com default para o testbed):
-    NS          namespace, para montar o FQDN         free5gc
-    SERVICES    servicos de borda, separados por ,    mec-app
-                (nome curto vira <nome>.<NS>.svc.cluster.local; um FQDN
-                 ou um IP literal tambem sao aceitos)
-    NEF_URL     base do NEF                           http://nef.free5gc.svc.cluster.local:8000
-    UDR_URL     base do UDR (so' para limpar orfaos)  http://udr.free5gc.svc.cluster.local:8000
-                (o prefixo /nudr-dr/v2 ou /v1 e' descoberto na primeira chamada)
-    AF_ID       id do AF na URL do NEF                af001
-    DNN         DNN das sessoes alvo                  internet
-    SNSSAIS     lista sst:sd separada por virgula     1:010203,1:112233
-    UE_CIDR     pool dos UEs (lado "to" do SDF)       60.60.0.0/16
-    DNAI        DNAI do dominio de borda (smfcfg)     mec
-    NOTIFY_URL  destino das notificacoes do NEF       http://mec-af.free5gc.svc.cluster.local:8080/notify
-    POLL_S      intervalo de sondagem do DNS          10
-    HTTP_PORT   porta do servidor de notificacao      8080
+Environment variables (all with defaults for the testbed):
+    NS          namespace, to build the FQDN           free5gc
+    SERVICES    edge services, separated by ,          mec-app
+                (a short name becomes <name>.<NS>.svc.cluster.local; an FQDN
+                 or a literal IP are also accepted)
+    NEF_URL     base of the NEF                        http://nef.free5gc.svc.cluster.local:8000
+    UDR_URL     base of the UDR (only to clean orphans) http://udr.free5gc.svc.cluster.local:8000
+                (the /nudr-dr/v2 or /v1 prefix is discovered at the first call)
+    AF_ID       id of the AF in the NEF URL            af001
+    DNN         DNN of the target sessions             internet
+    SNSSAIS     list of sst:sd separated by commas     1:010203,1:112233
+    UE_CIDR     pool of the UEs ("to" side of the SDF) 60.60.0.0/16
+    DNAI        DNAI of the edge domain (smfcfg)       mec
+    NOTIFY_URL  destination of the NEF notifications   http://mec-af.free5gc.svc.cluster.local:8080/notify
+    POLL_S      DNS polling interval                   10
+    HTTP_PORT   port of the notification server        8080
 """
 import json
 import os
@@ -119,7 +120,7 @@ def parse_snssais(spec):
 
 
 def parse_services(spec):
-    """Nome curto -> FQDN do Service. FQDN e IP literal passam intactos."""
+    """Short name -> FQDN of the Service. An FQDN or a literal IP pass unchanged."""
     out = []
     for item in spec.split(","):
         item = item.strip()
@@ -140,11 +141,11 @@ def snssai_key(s):
 
 
 def resolve(fqdn):
-    """ClusterIP atual do Service, ou None se o nome nao resolve.
+    """Current ClusterIP of the Service, or None if the name does not resolve.
 
-    Um Service normal tem um A record com o ClusterIP. Nao resolver significa,
-    na pratica, que o Service nao existe (ainda) -- o que e' o sinal de que a
-    assinatura correspondente deve sair do NEF."""
+    A normal Service has an A record with the ClusterIP. Not resolving means,
+    in practice, that the Service does not exist (yet) -- which is the signal
+    that the corresponding subscription must leave the NEF."""
     try:
         return socket.gethostbyname(fqdn)
     except socket.gaierror:
@@ -152,7 +153,7 @@ def resolve(fqdn):
 
 
 def http(method, url, body=None, timeout=15):
-    """Devolve (status, headers, corpo) sem lancar em 4xx/5xx."""
+    """Returns (status, headers, body) without raising on 4xx/5xx."""
     data = json.dumps(body).encode() if body is not None else None
     h = {"Accept": "application/json"}
     if data is not None:
@@ -172,7 +173,7 @@ def http(method, url, body=None, timeout=15):
 
 # ------------------------------------------------------------------ NEF
 class Nef:
-    """Cliente da API Nnef_TrafficInfluence (TS 29.522 §5.4)."""
+    """Client of the Nnef_TrafficInfluence API (TS 29.522 §5.4)."""
 
     def __init__(self):
         self.url = f"{CFG['nef_url']}/3gpp-traffic-influence/v1/{CFG['af_id']}/subscriptions"
@@ -185,22 +186,22 @@ class Nef:
         return loc.rstrip("/").rsplit("/", 1)[-1] if loc else None
 
     def alive(self):
-        """QUALQUER resposta HTTP significa NEF no ar -- inclusive 404.
+        """ANY HTTP response means the NEF is up -- including 404.
 
-        O AF so' passa a existir no NEF quando a PRIMEIRA assinatura e' criada
-        (PostTrafficInfluenceSubscription faz NewAf se nao achar); ate' la' o
-        GET da lista responde 404 "AF is not found". Exigir 200 aqui era
-        esperar por uma condicao que so' o proprio POST produz -- deadlock."""
+        The AF only exists at the NEF once the FIRST subscription is created
+        (PostTrafficInfluenceSubscription calls NewAf if it does not find it);
+        until then the GET of the list answers 404 "AF is not found". Requiring
+        200 here would wait for a condition that only the POST itself produces -- a deadlock."""
         try:
             http("GET", self.url)
             return True
-        except OSError as e:      # conexao recusada, DNS, timeout
-            log(f"NEF ainda nao responde: {type(e).__name__}: {e}")
+        except OSError as e:      # connection refused, DNS, timeout
+            log(f"NEF does not answer yet: {type(e).__name__}: {e}")
             return False
 
     def list(self):
-        """(status, lista). 404 = o AF ainda nao existe, o que e' normal antes
-        do primeiro POST e equivale a uma lista vazia."""
+        """(status, list). 404 = the AF does not exist yet, which is normal before
+        the first POST and is equivalent to an empty list."""
         st, _, body = http("GET", self.url)
         return st, (body if isinstance(body, list) else [])
 
@@ -214,38 +215,38 @@ class Nef:
         return http("DELETE", f"{self.url}/{sub_id}")
 
 
-# ------------------------------------------------------------------ UDR (so' limpeza)
+# ------------------------------------------------------------------ UDR (cleanup only)
 class Udr:
-    """Acesso direto ao UDR APENAS para apagar registros orfaos deixados por
-    um NEF reiniciado. Nunca cria nem altera nada aqui."""
+    """Direct access to the UDR ONLY to delete orphan records left by a
+    restarted NEF. It never creates or changes anything here."""
 
     def __init__(self):
-        self.url = None     # resolvido na primeira chamada: v2 (atual) ou v1 (guia)
+        self.url = None     # resolved at the first call: v2 (current) or v1 (guide)
 
     def _resolve(self):
         if self.url:
             return True
         for ver in ("v2", "v1"):
             url = f"{CFG['udr_url']}/nudr-dr/{ver}/application-data/influenceData"
-            # Basta o 200: com a consulta vazia o UDR responde 200 com corpo
-            # "null" (nao "[]"), entao exigir uma lista aqui so' encontraria a
-            # versao certa quando ja' houvesse dado gravado.
+            # A 200 is enough: with an empty query the UDR answers 200 with the body
+            # "null" (not "[]"), so requiring a list here would only find the
+            # right version once data had been written.
             if http("GET", f"{url}?dnns={urllib.parse.quote(CFG['dnn'])}")[0] == 200:
                 self.url = url
-                log(f"UDR: influenceData em {url}")
+                log(f"UDR: influenceData at {url}")
                 return True
-        log("UDR: nenhuma versao de /nudr-dr respondeu 200; sem varredura desta vez")
+        log("UDR: no version of /nudr-dr answered 200; no sweep this time")
         return False
 
     def list_ours(self):
-        """Registros de influenceData com a assinatura deste AF: (id, ip, snssai)."""
+        """influenceData records with the signature of this AF: (id, ip, snssai)."""
         if not self._resolve():
             return None
         st, _, body = http("GET", f"{self.url}?dnns={urllib.parse.quote(CFG['dnn'])}")
         if st != 200:
-            log(f"UDR GET influenceData -> {st}; sem varredura")
+            log(f"UDR GET influenceData -> {st}; no sweep")
             return None
-        body = body or []       # corpo "null" = nenhum registro
+        body = body or []       # body "null" = no record
         ours = []
         for it in body:
             if not isinstance(it, dict) or it.get("interGroupId") != "AnyUE":
@@ -271,10 +272,10 @@ class Udr:
         return http("DELETE", f"{self.url}/{iid}")[0]
 
 
-# ------------------------------------------------------------------ regra
+# ------------------------------------------------------------------ rule
 def flow_description(ip):
-    # Mesmo formato do guia oficial (free5gc.org/guide/8-traffic-influence):
-    # "out" = sentido downlink (servidor -> UE); o UPF aplica nos dois sentidos.
+    # Same format as the official guide (free5gc.org/guide/8-traffic-influence):
+    # "out" = downlink direction (server -> UE); the UPF applies it in both directions.
     return f"permit out ip from {ip}/32 to {CFG['ue_cidr']}"
 
 
@@ -294,9 +295,9 @@ def subscription_body(svc, ip, snssai):
     }
 
 
-# ------------------------------------------------------------------ reconciliacao
+# ------------------------------------------------------------------ reconciliation
 class Reconciler:
-    """Mantem (servico x S-NSSAI) -> assinatura no NEF com o ClusterIP atual."""
+    """Keeps (service x S-NSSAI) -> subscription at the NEF with the current ClusterIP."""
 
     def __init__(self, nef, udr):
         self.nef, self.udr = nef, udr
@@ -307,23 +308,23 @@ class Reconciler:
         with self.lock:
             return {f"{k[0]}/{k[1]}": dict(v) for k, v in self.subs.items()}
 
-    # --- adocao: reconstroi o estado a partir do proprio NEF ----------
+    # --- adoption: rebuilds the state from the NEF itself ----------
     def adopt(self):
-        """Le as assinaturas que existem sob o nosso AF_ID e assume o controle.
+        """Reads the subscriptions that exist under our AF_ID and takes control.
 
-        Torna o restart do mec-af idempotente: se a assinatura certa ja' esta'
-        la', nada e' criado. O AF_ID e' de uso exclusivo deste controlador,
-        entao o que estiver sob ele e nao corresponder a um servico de
-        SERVICES e' resto de execucao anterior e sai."""
+        Makes the restart of mec-af idempotent: if the right subscription is
+        already there, nothing is created. The AF_ID is used only by this
+        controller, so whatever is under it and does not match a service of
+        SERVICES is left over from a previous execution and is removed."""
         st, subs = self.nef.list()
         if st == 404:
-            self.subs = {}          # AF ainda nao existe: nada a adotar
+            self.subs = {}          # the AF does not exist yet: nothing to adopt
             return True
         if st != 200:
-            log(f"NEF GET subscriptions -> {st}; mantendo o estado atual")
+            log(f"NEF GET subscriptions -> {st}; keeping the current state")
             return False
-        nossos = {n for n, _ in SERVICES}
-        novo, lixo = {}, []
+        our_items = {n for n, _ in SERVICES}
+        new, junk = {}, []
         for s in subs:
             sid = self.nef.sub_id({}, s)
             svc = s.get("afServiceId")
@@ -334,40 +335,40 @@ class Reconciler:
                     if m:
                         ip = m.group(1)
             key = (svc, snssai_key(s.get("snssai")))
-            if not sid or svc not in nossos or ip is None or key in novo:
-                lixo.append(sid)
+            if not sid or svc not in our_items or ip is None or key in new:
+                junk.append(sid)
                 continue
-            novo[key] = {"id": sid, "ip": ip}
-        for sid in lixo:
+            new[key] = {"id": sid, "ip": ip}
+        for sid in junk:
             if sid:
-                log(f"NEF: apagando assinatura {sid} sem dono (resto de execucao "
+                log(f"NEF: deleting subscription {sid} without an owner (left from a previous "
                     f"anterior) -> {self.nef.delete(sid)[0]}")
-        if novo != self.subs:
-            log(f"adotadas {len(novo)} assinatura(s) do NEF: "
+        if new != self.subs:
+            log(f"adopted {len(new)} subscription(s) from the NEF: "
                 + (", ".join(f"{k[0]}[{k[1]}]=sub {v['id']}@{v['ip']}"
-                             for k, v in sorted(novo.items())) or "nenhuma"))
-        self.subs = novo
+                             for k, v in sorted(new.items())) or "none"))
+        self.subs = new
         return True
 
-    # --- UDR: apagar o que nao corresponde a uma assinatura viva ------
+    # --- UDR: delete what does not match a live subscription ------
     def sweep_udr(self):
         ours = self.udr.list_ours()
         if ours is None:
             return
-        vivas = {(v["ip"], k[1]) for k, v in self.subs.items()}
-        # Uma assinatura viva tem exatamente UM registro; qualquer repetido
-        # (mesmo ip+slice) e' orfao de um NEF anterior. Mantemos so' o ultimo
-        # visto, que e' o que o NEF atual escreveu por ultimo.
-        vistos = set()
+        alive_ = {(v["ip"], k[1]) for k, v in self.subs.items()}
+        # A live subscription has exactly ONE record; any repeated one
+        # (same ip+slice) is an orphan of a previous NEF. We keep only the last
+        # one seen, which is the one the current NEF wrote last.
+        seen = set()
         for iid, ip, sk in reversed(ours):
-            chave = (ip, sk)
-            if chave in vivas and chave not in vistos:
-                vistos.add(chave)
+            key_name = (ip, sk)
+            if key_name in alive_ and key_name not in seen:
+                seen.add(key_name)
                 continue
             st = self.udr.delete(iid)
-            log(f"UDR: apagado influenceData {iid} ({ip} [{sk}]) orfao -> {st}")
+            log(f"UDR: deleted influenceData {iid} ({ip} [{sk}]) orphan -> {st}")
 
-    # --- garantir / remover -------------------------------------------
+    # --- ensure / remove -------------------------------------------
     def ensure(self, svc, ip):
         for sk, snssai in SNSSAIS:
             key = (svc, sk)
@@ -381,7 +382,7 @@ class Reconciler:
                     log(f"{svc} [{sk}] {cur['ip']} -> {ip}: PUT ok (sub {cur['id']})")
                     cur["ip"] = ip
                     continue
-                log(f"{svc} [{sk}] PUT sub {cur['id']} -> {st}: {resp}; recriando")
+                log(f"{svc} [{sk}] PUT sub {cur['id']} -> {st}: {resp}; recreating")
                 self.subs.pop(key, None)
             st, hdr, resp = self.nef.create(body)
             sid = self.nef.sub_id(hdr, resp) if st == 201 else None
@@ -396,30 +397,30 @@ class Reconciler:
         for key in [k for k in self.subs if k[0] == svc]:
             cur = self.subs.pop(key)
             st, _, _ = self.nef.delete(cur["id"])
-            log(f"{svc} [{key[1]}] removido: DELETE sub {cur['id']} -> {st}")
+            log(f"{svc} [{key[1]}] removed: DELETE sub {cur['id']} -> {st}")
 
     def tick(self, desired):
-        """desired: {nome_curto: ip}. Chamado a cada sondagem do DNS."""
+        """desired: {short_name: ip}. Called at each DNS poll."""
         with self.lock:
-            # A adocao ja' cobre o NEF reiniciado: a lista volta vazia (ou 404)
-            # e o estado local zera junto, entao tudo e' recriado.
+            # Adoption already covers a restarted NEF: the list comes back empty (or 404)
+            # and the local state is reset with it, so everything is recreated.
             if not self.adopt():
                 return
-            faltando = {(s, sk) for s in desired for sk, _ in SNSSAIS} - set(self.subs)
+            lacking = {(s, sk) for s in desired for sk, _ in SNSSAIS} - set(self.subs)
             for svc in {k[0] for k in self.subs} - set(desired):
                 self.remove(svc)
-            if faltando:
-                # Varre o UDR ANTES de criar: o registro velho do mesmo IP
-                # seria uma PCC rule duplicada em cada sessao. So' quando ha'
-                # algo a criar, para nao sondar o UDR a cada 10s a toa.
+            if lacking:
+                # Sweep the UDR BEFORE creating: the old record of the same IP
+                # would be a duplicated PCC rule in each session. Only when there is
+                # something to create, so as not to poll the UDR every 10 s for nothing.
                 self.sweep_udr()
             for svc, ip in desired.items():
                 self.ensure(svc, ip)
 
-    # Nao existe shutdown() de proposito -- veja o comentario em term().
+    # There is no shutdown() on purpose -- see the comment in term().
 
 
-# ------------------------------------------------------------------ HTTP (notificacoes + estado)
+# ------------------------------------------------------------------ HTTP (notifications + state)
 def http_server(rec):
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -443,66 +444,66 @@ def http_server(rec):
                 self._send(404)
 
         def do_POST(self):
-            # UpPathChange e afins (TS 29.522 EventNotification). So' registramos.
+            # UpPathChange and similar (TS 29.522 EventNotification). We only log them.
             n = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(n) if n else b""
-            log(f"notificacao do NEF em {self.path}: {raw.decode(errors='replace')[:500]}")
+            log(f"NEF notification at {self.path}: {raw.decode(errors='replace')[:500]}")
             self._send(204)
 
     srv = ThreadingHTTPServer(("0.0.0.0", CFG["http_port"]), H)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    log(f"HTTP de notificacao/estado em :{CFG['http_port']} (/notify, /status, /healthz)")
+    log(f"notification/state HTTP on :{CFG['http_port']} (/notify, /status, /healthz)")
 
 
 # ------------------------------------------------------------------ main
 def main():
-    log("mec-af iniciando com " + json.dumps(CFG))
+    log("mec-af starting with " + json.dumps(CFG))
     if not SNSSAIS:
-        sys.exit("SNSSAIS vazio")
+        sys.exit("SNSSAIS empty")
     if not SERVICES:
-        sys.exit("SERVICES vazio")
-    log("servicos vigiados: " + ", ".join(f"{n} -> {f}" for n, f in SERVICES))
+        sys.exit("SERVICES empty")
+    log("watched services: " + ", ".join(f"{n} -> {f}" for n, f in SERVICES))
 
     nef, udr = Nef(), Udr()
     rec = Reconciler(nef, udr)
     http_server(rec)
 
     def term(signum, frame):
-        # NAO apagamos as assinaturas ao sair, por dois motivos:
-        #  1. o rollout do Deployment sobrepoe os pods -- o novo ja' adotou as
-        #     assinaturas quando o antigo recebe o SIGTERM, e apagar aqui
-        #     derrubaria justo o que o novo acabou de assumir (foi o que
-        #     aconteceu em 03/09: o novo pod recriou tudo 20s depois);
-        #  2. o AF e' so' o anunciante. O valor do desenho e' a regra viver no
-        #     nucleo por conta propria; reiniciar o anunciante nao pode tirar
-        #     o LBO de sessoes PDU que estao no ar.
-        # O que sobra e' recolhido pela adocao e pela varredura do UDR no
-        # proximo boot.
-        log("SIGTERM: saindo sem mexer nas assinaturas (elas sobrevivem ao AF)")
+        # We do NOT delete the subscriptions on exit, for two reasons:
+        #  1. the rollout of the Deployment overlaps the pods -- the new one has already adopted the
+        #     subscriptions when the old one receives SIGTERM, and deleting here
+        #     would remove exactly what the new one just took over (this happened
+        #     once: the new pod recreated everything 20 s later);
+        #  2. the AF is only the announcer. The value of the design is that the rule lives in
+        #     the core on its own; restarting the announcer must not remove
+        #     the LBO from PDU sessions that are running.
+        # What is left over is collected by the adoption and by the UDR sweep at the
+        # next boot.
+        log("SIGTERM: exiting without touching the subscriptions (they survive the AF)")
         os._exit(0)
     signal.signal(signal.SIGTERM, term)
     signal.signal(signal.SIGINT, term)
 
     while not nef.alive():
-        log(f"aguardando o NEF em {nef.url}")
+        log(f"waiting for the NEF at {nef.url}")
         time.sleep(5)
-    log(f"NEF no ar em {nef.url}")
+    log(f"NEF up at {nef.url}")
 
-    anterior = None
+    previous = None
     while True:
         try:
             desired = {}
-            for nome, fqdn in SERVICES:
+            for name_str, fqdn in SERVICES:
                 ip = resolve(fqdn)
                 if ip:
-                    desired[nome] = ip
-            if desired != anterior:
+                    desired[name_str] = ip
+            if desired != previous:
                 log("DNS: " + (", ".join(f"{n}={ip}" for n, ip in sorted(desired.items()))
-                               or "nenhum servico resolve"))
-                anterior = desired
+                               or "no service resolves"))
+                previous = desired
             rec.tick(desired)
-        except Exception as e:            # noqa: BLE001 -- loop de controle
-            log(f"erro no loop: {type(e).__name__}: {e}")
+        except Exception as e:            # noqa: BLE001 -- control loop
+            log(f"error in the loop: {type(e).__name__}: {e}")
         time.sleep(CFG["poll_s"])
 
 

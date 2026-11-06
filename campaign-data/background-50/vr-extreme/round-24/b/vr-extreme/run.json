@@ -1,0 +1,272 @@
+{
+ "profile": "vr-extreme",
+ "workload": {
+  "bitrate_mbps": 100,
+  "fps": 90,
+  "pose_hz": 250,
+  "mtu": 1200,
+  "description": "High-fidelity VR (~4K per eye). It finds the CEILING of the testbed: if the load does not flow, the report says where it stopped, and that is also a result."
+ },
+ "executions": [
+  {
+   "execution": 1,
+   "proof": {
+    "mec": {
+     "delta": {
+      "i-upf": {
+       "rx_bytes": 390056,
+       "rx_pkts": 2501,
+       "tx_bytes": 128203200,
+       "tx_pkts": 104400
+      },
+      "psa-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 0,
+       "tx_pkts": 0
+      }
+     },
+     "frames": 899
+    },
+    "remote": {
+     "delta": {
+      "i-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 0,
+       "tx_pkts": 0
+      },
+      "psa-upf": {
+       "rx_bytes": 390056,
+       "rx_pkts": 2501,
+       "tx_bytes": 128203200,
+       "tx_pkts": 104400
+      }
+     },
+     "frames": 897
+    }
+   },
+   "paths": {
+    "b-mec": {
+     "label": "b-mec",
+     "server": "10.107.157.9:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.5,
+     "ul_window_s": 60.0,
+     "warmup_s": 5.0,
+     "pose_hz": 250.0,
+     "frames_complete": 3770,
+     "frames_partial": 1630,
+     "dl_packets_rx_run": 620894,
+     "frames_incomplete_pct": 30.185,
+     "frames_in_stats": 3320,
+     "dl_packet_loss_pct": 0.9589,
+     "dl_throughput_mbps": 99.263,
+     "dl_continuity_pct": 99.99,
+     "ul_packets_tx": 15000,
+     "ul_pose_hz_real": 250.0,
+     "ul_throughput_mbps": 0.256,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.0,
+      "span_s": 54.997,
+      "frames_expected": 4950,
+      "dl_packets_rx": 568694,
+      "dl_packets_expected": 574200
+     },
+     "m2p_us": {
+      "min": 8899.1,
+      "p50": 10850.15,
+      "p95": 12660.52,
+      "p99": 13476.582999999999,
+      "max": 20717.0,
+      "mean": 10919.1
+     },
+     "net_rtt_us": {
+      "min": 404.6,
+      "p50": 586.8,
+      "p95": 1003.1249999999999,
+      "p99": 2242.4829999999997,
+      "max": 9318.5,
+      "mean": 667.9
+     },
+     "hold_us": {
+      "min": 8266.0,
+      "p50": 10298.0,
+      "p95": 11968.05,
+      "max": 20148.0,
+      "mean": 10251.2
+     },
+     "jitter_us": 1226.8,
+     "jitter_net_us": 98.1,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 0,
+      "udp_in_errors": 0,
+      "ctxt_switches_involuntary": 1129,
+      "clock_drift_us": 4.9
+     },
+     "_gtp": {
+      "i-upf": {
+       "rx_bytes": 2340056,
+       "rx_pkts": 15001,
+       "tx_bytes": 769219200,
+       "tx_pkts": 626400
+      },
+      "psa-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 3443895776,
+       "tx_pkts": 2488364
+      },
+      "ue-tun": {
+       "rx_bytes": 762457832,
+       "rx_pkts": 620894,
+       "tx_bytes": 2340056,
+       "tx_pkts": 15001
+      }
+     },
+     "_order": 1,
+     "_srv": {
+      "frames_sent_total": 5400.0,
+      "frame_packets_total": 626400.0,
+      "frames_late_total": 10.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 15001.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.007778,
+      "sndbuf_bytes": 16777216.0
+     },
+     "_server_fps": 90.0,
+     "dl_packet_loss_srv_pct": 0.879
+    },
+    "b-remote": {
+     "label": "b-remote",
+     "server": "10.110.69.110:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.504,
+     "ul_window_s": 60.004,
+     "warmup_s": 5.0,
+     "pose_hz": 250.0,
+     "frames_complete": 4082,
+     "frames_partial": 1318,
+     "dl_packets_rx_run": 620745,
+     "frames_incomplete_pct": 24.407,
+     "frames_in_stats": 3633,
+     "dl_packet_loss_pct": 0.9812,
+     "dl_throughput_mbps": 99.214,
+     "dl_continuity_pct": 99.96,
+     "ul_packets_tx": 14996,
+     "ul_pose_hz_real": 249.9,
+     "ul_throughput_mbps": 0.256,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.004,
+      "span_s": 54.98,
+      "frames_expected": 4949,
+      "dl_packets_rx": 568451,
+      "dl_packets_expected": 574084
+     },
+     "m2p_us": {
+      "min": 9657.9,
+      "p50": 12798.0,
+      "p95": 17258.679999999993,
+      "p99": 19553.62,
+      "max": 27383.2,
+      "mean": 13087.1
+     },
+     "net_rtt_us": {
+      "min": 1207.0,
+      "p50": 1986.5,
+      "p95": 5769.5,
+      "p99": 8403.43599999999,
+      "max": 18631.2,
+      "mean": 2630.3
+     },
+     "hold_us": {
+      "min": 8082.0,
+      "p50": 10236.0,
+      "p95": 13584.79999999999,
+      "max": 19256.0,
+      "mean": 10456.9
+     },
+     "jitter_us": 2226.7,
+     "jitter_net_us": 2365.1,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 31,
+      "udp_in_errors": 31,
+      "ctxt_switches_involuntary": 880,
+      "clock_drift_us": 4.5
+     },
+     "_gtp": {
+      "i-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 0,
+       "tx_pkts": 0
+      },
+      "psa-upf": {
+       "rx_bytes": 2339432,
+       "rx_pkts": 14997,
+       "tx_bytes": 4220405888,
+       "tx_pkts": 3120032
+      },
+      "ue-tun": {
+       "rx_bytes": 762371872,
+       "rx_pkts": 620824,
+       "tx_bytes": 2339432,
+       "tx_pkts": 14997
+      }
+     },
+     "_order": 2,
+     "_srv": {
+      "frames_sent_total": 5400.0,
+      "frame_packets_total": 626400.0,
+      "frames_late_total": 0.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 14997.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.007778,
+      "sndbuf_bytes": 425984.0
+     },
+     "_server_fps": 89.99400039997334,
+     "dl_packet_loss_srv_pct": 0.9028
+    }
+   },
+   "placement": {
+    "ueransim": "brix-porvir-02",
+    "i-upf": "brix-porvir-05",
+    "mec-app": "brix-porvir-05",
+    "psa-upf": "petshopboys",
+    "remote-app": "metallica",
+    "smf": "petshopboys",
+    "amf": "petshopboys"
+   },
+   "warnings": [
+    [
+     "general",
+     "socket buffer below the minimum (4096 kB) at 1 of 3 points:\n         remote-app (vr_server) @ metallica: 416 kB\n       What overflows the queue becomes 'loss' in the report without being loss at the UPF -- and if it\n       remains on one side only, the comparison between the paths reflects a difference of loss, not of path.\n       Run ON THE NODE (they are global sysctls; the container does not see them):\n         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216\n       To keep it after a reboot, write it to /etc/sysctl.d/99-tg2-vr.conf. On the core nodes (petshopboys, metallica),\n       where there is no sudo, the way out is to lower the load profile until both sides lose equally."
+    ]
+   ],
+   "output": null,
+   "seconds": 175.0,
+   "profile": "vr-extreme",
+   "attempts": 1
+  }
+ ],
+ "failures": [],
+ "duration_s": 60.0,
+ "warmup_s": 5.0,
+ "repetitions": 1
+}

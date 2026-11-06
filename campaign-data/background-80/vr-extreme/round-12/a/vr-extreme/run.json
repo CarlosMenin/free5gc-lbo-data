@@ -1,0 +1,157 @@
+{
+ "profile": "vr-extreme",
+ "workload": {
+  "bitrate_mbps": 100,
+  "fps": 90,
+  "pose_hz": 250,
+  "mtu": 1200,
+  "description": "High-fidelity VR (~4K per eye). It finds the CEILING of the testbed: if the load does not flow, the report says where it stopped, and that is also a result."
+ },
+ "executions": [
+  {
+   "execution": 1,
+   "proof": {
+    "mec": {
+     "delta": {
+      "upf": {
+       "rx_bytes": 390056,
+       "rx_pkts": 2501,
+       "tx_bytes": 128203200,
+       "tx_pkts": 104400
+      }
+     },
+     "frames": 899,
+     "poses": 2500
+    },
+    "remote": {
+     "delta": {
+      "upf": {
+       "rx_bytes": 390056,
+       "rx_pkts": 2501,
+       "tx_bytes": 128203200,
+       "tx_pkts": 104400
+      }
+     },
+     "frames": 900,
+     "poses": 2500
+    }
+   },
+   "paths": {
+    "a-mec": {
+     "label": "a-mec",
+     "server": "10.107.157.9:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.5,
+     "ul_window_s": 60.0,
+     "warmup_s": 5.0,
+     "pose_hz": 250.0,
+     "frames_complete": 3939,
+     "frames_partial": 1461,
+     "dl_packets_rx_run": 620790,
+     "frames_incomplete_pct": 27.056,
+     "frames_in_stats": 3488,
+     "dl_packet_loss_pct": 0.9772,
+     "dl_throughput_mbps": 99.224,
+     "dl_continuity_pct": 99.96,
+     "ul_packets_tx": 15000,
+     "ul_pose_hz_real": 250.0,
+     "ul_throughput_mbps": 0.256,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.0,
+      "span_s": 54.979,
+      "frames_expected": 4949,
+      "dl_packets_rx": 568474,
+      "dl_packets_expected": 574084
+     },
+     "m2p_us": {
+      "min": 9762.6,
+      "p50": 11904.9,
+      "p95": 13888.3,
+      "p99": 15247.468,
+      "max": 22419.9,
+      "mean": 12014.8
+     },
+     "net_rtt_us": {
+      "min": 1072.0,
+      "p50": 1778.05,
+      "p95": 2784.7149999999997,
+      "p99": 4527.638000000001,
+      "max": 7945.1,
+      "mean": 1880.7
+     },
+     "hold_us": {
+      "min": 8183.0,
+      "p50": 10044.0,
+      "p95": 11815.799999999996,
+      "max": 18528.0,
+      "mean": 10134.2
+     },
+     "jitter_us": 882.2,
+     "jitter_net_us": 442.8,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 0,
+      "udp_in_errors": 0,
+      "ctxt_switches_involuntary": 307,
+      "clock_drift_us": 5.2
+     },
+     "_gtp": {
+      "upf": {
+       "rx_bytes": 2340779,
+       "rx_pkts": 15012,
+       "tx_bytes": 6224867400,
+       "tx_pkts": 4568352
+      },
+      "ue-tun": {
+       "rx_bytes": 762445552,
+       "rx_pkts": 620884,
+       "tx_bytes": 2340104,
+       "tx_pkts": 15002
+      }
+     },
+     "_order": 1,
+     "_srv": {
+      "frames_sent_total": 5400.0,
+      "frame_packets_total": 626400.0,
+      "frames_late_total": 1.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 14988.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.007778,
+      "sndbuf_bytes": 16777216.0
+     },
+     "_server_fps": 90.0,
+     "dl_packet_loss_srv_pct": 0.8956
+    }
+   },
+   "placement": {
+    "ueransim": "brix-porvir-02",
+    "upf": "petshopboys",
+    "mec-app": "brix-porvir-05",
+    "remote-app": "metallica",
+    "smf": "petshopboys",
+    "amf": "petshopboys"
+   },
+   "warnings": [
+    [
+     "general",
+     "socket buffer below the minimum (4096 kB) at 1 of 3 points:\n         remote-app (vr_server) @ metallica: 416 kB\n       What overflows the queue becomes 'loss' in the report without being loss at the UPF -- and if it\n       remains on one side only, the comparison between the paths reflects a difference of loss, not of path.\n       Run ON THE NODE (they are global sysctls; the container does not see them):\n         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216\n       To keep it after a reboot, write it to /etc/sysctl.d/99-tg2-vr.conf. On the core nodes (petshopboys, metallica),\n       where there is no sudo, the way out is to lower the load profile until both sides lose equally."
+    ]
+   ],
+   "output": null,
+   "seconds": 104.2,
+   "profile": "vr-extreme",
+   "attempts": 1
+  }
+ ],
+ "failures": [],
+ "duration_s": 60.0,
+ "warmup_s": 5.0,
+ "repetitions": 1
+}

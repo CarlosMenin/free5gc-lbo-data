@@ -1,0 +1,37 @@
+{
+ "mode": "gtp",
+ "level": 50,
+ "capacity_mbps": 884.9183139276828,
+ "requested_mbps": 442.4591569638414,
+ "on": true,
+ "crossed_mbps": 443.1151731175438,
+ "delivered_fraction": 1.0014826592316544,
+ "receiver_drops": null,
+ "problems": [],
+ "iperf_rate_mbps": 428.6,
+ "datagram": 1356,
+ "flows": 2,
+ "seconds_on": 127.8,
+ "sent_mbps": 443.24861641877936,
+ "gtpu_ip_mbps": 451.9774765798947,
+ "gtpu_pkts": 5057312,
+ "path_loss_pct": 0.03010574569045632,
+ "delivered_to_ue_pkts": 258080,
+ "dropped_at_background_ue_pkts": 4799232,
+ "iperf_error": "interrupt - the client has terminated",
+ "generator_node": "petshopboys",
+ "receiver_node": "brix-porvir-03",
+ "anchor_node": "petshopboys",
+ "background_ue_ip": "60.60.128.1",
+ "delay_s": 0.8,
+ "setup_s": 7.9,
+ "ue_recreated": false,
+ "gtpu_origin": {
+  "10.101.86.58": 30
+ },
+ "origin": "background GTP-U came only from psa-upf: psa-upf via 10.101.86.58 (30)",
+ "times_on": 1,
+ "capacity_measurements": [
+  884.9
+ ]
+}

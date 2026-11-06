@@ -1,0 +1,10 @@
+{
+ "level": 80,
+ "capacity_mbps": 891.1358208986554,
+ "requested_mbps": 712.9086567189244,
+ "on": false,
+ "times_on": 0,
+ "capacity_measurements": [
+  891.1
+ ]
+}

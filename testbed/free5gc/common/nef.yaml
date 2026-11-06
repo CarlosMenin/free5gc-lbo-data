@@ -1,16 +1,17 @@
-# NEF (Network Exposure Function) -- porta de entrada do LBO DINAMICO.
+# NEF (Network Exposure Function) -- entry point of the DYNAMIC LBO.
 #
-# O AF do testbed (mec/mec-af.yaml) publica aqui assinaturas de Traffic
-# Influence (TS 29.522, /3gpp-traffic-influence/v1). O NEF grava a regra no
-# UDR (application-data/influenceData); o PCF, que se inscreve no UDR por
-# sessao PDU, recebe a notificacao e manda um SmPolicyUpdateNotify ao SMF; o
-# SMF seleciona o UPF pelo DNAI ("mec", declarado no I-UPF do cenario B) e
-# instala o branch ULCL por PFCP Session Modification -- em sessoes ja'
-# abertas e nas novas, sem reiniciar nada.
+# The AF of the testbed (mec/mec-af.yaml) publishes Traffic Influence
+# subscriptions here (TS 29.522, /3gpp-traffic-influence/v1). The NEF writes the
+# rule to the UDR (application-data/influenceData); the PCF, which subscribes to
+# the UDR per PDU session, receives the notification and sends an
+# SmPolicyUpdateNotify to the SMF; the SMF selects the UPF by the DNAI ("mec",
+# declared in the I-UPF of Scenario B) and installs the ULCL branch by PFCP
+# Session Modification -- in sessions already open and in new ones, restarting
+# nothing.
 #
-# So' e' consumido pelo mec-af. Nenhum outro NF depende dele: se ele cair, o
-# core segue de pe' e o que se perde e' a capacidade de ANUNCIAR regras novas
-# (as ja' gravadas no UDR continuam valendo).
+# It is used only by mec-af. No other NF depends on it: if it goes down, the core
+# stays up and what is lost is the ability to ANNOUNCE new rules (the ones already
+# written to the UDR still apply).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -69,7 +70,7 @@ spec:
         - name: nef
           image: free5gc/nef:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./nef", "-c", "/configuracoes/nefConfig.yaml"]
+          command: ["./nef", "-c", "/nf-config/nefConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -79,7 +80,7 @@ spec:
               containerPort: 8000
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

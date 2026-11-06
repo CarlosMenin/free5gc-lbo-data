@@ -8,16 +8,13 @@ import filecmp, glob, hashlib, os, sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# SHA-256 of the derived files as shipped (identical to the files used in the paper).
+# SHA-256 of the derived files as shipped (the tables built from them are identical
+# to the ones used in the paper).
 DERIVED = {
-    "analysis/dados.json":
-        "aea3a5cf49cee10b2d18fccbcb9ad72cbdfac72f6e1e3cfe91cd44dcd4136192",
-    "infrastructure-metrics/janelas.csv":
-        "3fb8a47fd46be64b701bff7dd85e4bf07e1a86b1739937fe3e297d85d3dfe104",
-    "infrastructure-metrics/metricas-por-janela.csv":
-        "77d949b5a25264f9c4c04121b41ad7681c08cd8d9d5317443f7411c25af989fc",
-    "infrastructure-metrics/infra-pareado.json":
-        "2f157556d1c1f5294ee9f793e6d259adc12828b5df078bf097d9bd4a00a414d9",
+    "analysis/runs.json": "c9d83069b00904ca7c810c96077f334580966783e070d2742c39a1f2419a85a0",
+    "infrastructure-metrics/windows.csv": "4ca7b4b03da992f531758e8c38d1a4b2cfe863eaf1feef853252671509d6aa25",
+    "infrastructure-metrics/metrics-per-window.csv": "603f33ee9274db68f949b1ec0c56bbfa9ff5db0370b7d0e3a02aa42c65e1577f",
+    "infrastructure-metrics/infra-paired.json": "6a96ac5eb566480104d65ee3027b3383aa53f36dab2be34ca7044207511a97ef",
 }
 
 TABLE_PAIRS = [(os.path.join("analysis", "out", "tables"), os.path.join("analysis", "expected", "tables")),
@@ -32,7 +29,7 @@ def sha256(path):
 def main():
     bad = 0
     for path, ref in DERIVED.items():
-        ok = sha256(path) == ref
+        ok = os.path.exists(os.path.join(ROOT, path)) and sha256(path) == ref
         bad += not ok
         print(("ok    " if ok else "DIFF  ") + path)
     for out, exp in TABLE_PAIRS:
@@ -45,7 +42,8 @@ def main():
         p = os.path.join(ROOT, "analysis", "out", "paper-figures", fig)
         ok = os.path.exists(p)
         bad += not ok
-        print(("ok    " if ok else "MISS  ") + os.path.relpath(p, ROOT) + "  (compare visually with analysis/expected/paper-figures/)")
+        print(("ok    " if ok else "MISS  ") + os.path.relpath(p, ROOT)
+              + "  (compare visually with analysis/expected/paper-figures/)")
     print("\nall outputs match" if not bad else "\n%d output(s) differ" % bad)
     return 1 if bad else 0
 

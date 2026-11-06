@@ -1,4 +1,4 @@
-# CENARIO A (baseline): SMF com um unico UPF centralizado, SEM ULCL.
+# SCENARIO A (baseline): SMF with a single centralized UPF, WITHOUT ULCL.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,7 +8,7 @@ data:
   smfConfig.yaml: |
     info:
       version: 1.0.7
-      description: SMF - cenario A (UPF centralizado)
+      description: SMF - Scenario A (centralized UPF)
 
     configuration:
       smfName: SMF
@@ -24,7 +24,7 @@ data:
         - nsmf-pdusession
         - nsmf-event-exposure
         - nsmf-oam
-        - nsmf-callback   # NOVO na v4.x
+        - nsmf-callback   # NEW in v4.x
       snssaiInfos:
         - sNssai:
             sst: 1
@@ -59,12 +59,12 @@ data:
             type: UPF
             nodeID: upf.free5gc.svc.cluster.local
             addr: upf.free5gc.svc.cluster.local
-            # O SMF valida sobreposicao de pools GLOBALMENTE (isOverlap sobre
-            # allUEIPPools em internal/context/user_plane_information.go): ele
-            # NAO separa por S-NSSAI. Declarar 60.60.0.0/16 nas duas slices
-            # aborta o boot com "overlap cidr value between UPFs". Por isso o
-            # /16 e' partido em dois /17 disjuntos - ambos continuam dentro do
-            # cidr 60.60.0.0/16 do upfcfg, entao a rota/NAT do UPF nao muda.
+            # The SMF checks pool overlap GLOBALLY (isOverlap over
+            # allUEIPPools in internal/context/user_plane_information.go): it
+            # does NOT separate by S-NSSAI. Declaring 60.60.0.0/16 in both slices
+            # aborts the boot with "overlap cidr value between UPFs". That is why the
+            # /16 is split into two disjoint /17 - both stay inside the
+            # cidr 60.60.0.0/16 of the upfcfg, so the route/NAT of the UPF does not change.
             sNssaiUpfInfos:
               - sNssai:
                   sst: 1
@@ -81,8 +81,8 @@ data:
                     pools:
                       - cidr: 60.60.128.0/17
             interfaces:
-              # endpoints NAO pode ser 0.0.0.0: este endereco vai no F-TEID
-              # entregue ao gNB, entao precisa ser roteavel.
+              # endpoints CANNOT be 0.0.0.0: this address goes in the F-TEID
+              # handed to the gNB, so it must be routable.
               - interfaceType: N3
                 endpoints:
                   - upf.free5gc.svc.cluster.local
@@ -100,28 +100,28 @@ data:
         expireTime: 16s
         maxRetryTimes: 3
       nrfUri: http://nrf.free5gc.svc.cluster.local:8000
-      # URR (Usage Reporting Rules) -- o que o UPF reporta ao SMF para charging.
+      # URR (Usage Reporting Rules) -- what the UPF reports to the SMF for charging.
       #
-      # Os valores de exemplo do free5gc (urrThreshold: 1000, em BYTES) fazem o
-      # UPF mandar um Usage Report PFCP a cada 1000 bytes trafegados. Numa demo
-      # de ping isso e' inocente; sob a carga VR e' fatal:
+      # The example values of free5gc (urrThreshold: 1000, in BYTES) make the
+      # UPF send a PFCP Usage Report every 1000 bytes of traffic. In a ping
+      # demo this is harmless; under the VR load it is fatal:
       #
-      #     6 Mbps  ->    ~750 relatorios/s
-      #    50 Mbps  ->   ~6250 relatorios/s
+      #     6 Mbps  ->    ~750 reports/s
+      #    50 Mbps  ->   ~6250 reports/s
       #
-      # Medido em 08/09/2026: 27.814 USA Reports num unico I-UPF. O SMF nao
-      # sustenta esse volume de transacoes PFCP, os numeros de sequencia
-      # colidem ("Sequence number 99911 already exist!"), a associacao com o
-      # UPF CAI ("UPF[...] not associated with SMF"), o plano de dados morre e
-      # sessoes PDU novas passam a falhar. O SMF chega a entrar em panic no
-      # handler HTTP. Era esta a causa do caminho remoto "parar sozinho" no
-      # meio das campanhas.
+      # Measured: 27,814 USA Reports on a single I-UPF. The SMF does not
+      # sustain this volume of PFCP transactions, the sequence numbers
+      # collide ("Sequence number 99911 already exist!"), the association with the
+      # UPF DROPS ("UPF[...] not associated with SMF"), the data plane dies and
+      # new PDU sessions start to fail. The SMF even panics in the
+      # HTTP handler. This was the cause of the remote path "stopping by itself" in
+      # the middle of the campaigns.
       #
-      # E nada disso serve para coisa alguma aqui: nao ha CHF no testbed
-      # ("chf selection error: no CHF found in CHFSelection"), entao o relatorio
-      # e' produzido, transportado e descartado. Os limiares abaixo mantem o URR
-      # existindo (o free5gc precisa da URR para montar a sessao) sem que ele
-      # dispare durante uma campanha.
+      # And none of this serves any purpose here: there is no CHF in the testbed
+      # ("chf selection error: no CHF found in CHFSelection"), so the report
+      # is produced, carried and dropped. The thresholds below keep the URR
+      # existing (free5gc needs the URR to build the session) without it
+      # firing during a campaign.
       urrPeriod: 3600
       urrThreshold: 1000000000
       requestedUnit: 1000000000
@@ -138,15 +138,15 @@ data:
       level: info
       reportCaller: false
 ---
-# O SMF le o arquivo de ueRouting INCONDICIONALMENTE no boot (cmd/main.go chama
-# factory.ReadUERoutingConfig antes de qualquer coisa; nao ha checagem de ulcl).
-# Sem o -u ele cai no default "./config/uerouting.yaml", que nao existe na
-# imagem, e aborta com:
+# The SMF reads the ueRouting file UNCONDITIONALLY at boot (cmd/main.go calls
+# factory.ReadUERoutingConfig before anything else; there is no ulcl check).
+# Without -u it falls back to the default "./config/uerouting.yaml", which does not
+# exist in the image, and aborts with:
 #     SMF Run error: ReadConfig [] Error: open ./config/uerouting.yaml: no such
 #     file or directory
-# Ou seja: mesmo sem ULCL o cenario A precisa de um arquivo. Este e' vazio de
-# proposito -- "ueRoutingInfo" e' valid:"optional", entao um "info" valido basta,
-# e com ulcl ausente (false) o InitSMFUERouting nem chega a olhar o conteudo.
+# That is: even without ULCL, Scenario A needs a file. This one is empty on
+# purpose -- "ueRoutingInfo" is valid:"optional", so a valid "info" is enough,
+# and with ulcl absent (false) InitSMFUERouting does not even look at the content.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -156,7 +156,7 @@ data:
   ueRouting.yaml: |
     info:
       version: 1.0.7
-      description: Roteamento de UE - cenario A (sem ULCL, arquivo vazio)
+      description: UE routing - Scenario A (no ULCL, empty file)
 
     ueRoutingInfo: {}
 ---
@@ -181,12 +181,12 @@ spec:
         prometheus: free5gc-monitor
     spec:
       hostname: smf-pod
-      # SERVER NODE (5G Core), junto do resto do Centralized Control Plane e
-      # IGUAL ao SMF do cenario B (scenario-b-dupf/smf.yaml). A comparacao
-      # A x B so' vale se a unica coisa que muda entre os dois for o PLANO DE
-      # USUARIO -- deixar o SMF do cenario A em outro no que o do B introduz
-      # uma diferenca de sinalizacao (N4 para o UPF, N11 para o AMF) que nao
-      # tem nada a ver com a pergunta.
+      # SERVER NODE (5G Core), together with the rest of the Centralized Control Plane and
+      # EQUAL to the SMF of Scenario B (scenario-b-dupf/smf.yaml). The A x B comparison
+      # only holds if the only thing that changes between the two is the USER
+      # PLANE -- leaving the SMF of Scenario A on a node other than that of B introduces
+      # a signaling difference (N4 to the UPF, N11 to the AMF) that has
+      # nothing to do with the question.
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/hostname: petshopboys
@@ -195,9 +195,9 @@ spec:
         - name: smf
           image: free5gc/smf:v4.2.3
           imagePullPolicy: IfNotPresent
-          # O -u e' obrigatorio mesmo sem ULCL: o SMF le o arquivo no boot
-          # independente da flag. Ver o comentario no ConfigMap ue-routing-info.
-          command: ["./smf", "-c", "/configuracoes/smfConfig.yaml", "-u", "/free5gc/ue/ueRouting.yaml"]
+          # -u is mandatory even without ULCL: the SMF reads the file at boot
+          # regardless of the flag. See the comment in the ue-routing-info ConfigMap.
+          command: ["./smf", "-c", "/nf-config/smfConfig.yaml", "-u", "/free5gc/ue/ueRouting.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -213,7 +213,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
             - name: config-uerouting
               mountPath: /free5gc/ue
       volumes:

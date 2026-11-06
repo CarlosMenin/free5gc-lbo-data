@@ -5,9 +5,9 @@ metadata:
   namespace: free5gc
 data:
   udrConfig.yaml: |
-    # ATENCAO (migracao v3.3.0 -> v4.2.3):
-    #   - info.version passou de 1.0.2 para 1.1.0
-    #   - novo campo obrigatorio dbConnectorType
+    # WARNING (migration v3.3.0 -> v4.2.3):
+    #   - info.version went from 1.0.2 to 1.1.0
+    #   - new mandatory field dbConnectorType
     info:
       version: 1.1.0
       description: UDR initial local configuration
@@ -67,7 +67,7 @@ spec:
         - name: udr
           image: free5gc/udr:v4.2.3
           imagePullPolicy: IfNotPresent
-          command: ["./udr", "-c", "/configuracoes/udrConfig.yaml"]
+          command: ["./udr", "-c", "/nf-config/udrConfig.yaml"]
           env:
             - name: GIN_MODE
               value: release
@@ -80,7 +80,7 @@ spec:
               containerPort: 9091
           volumeMounts:
             - name: config-volume
-              mountPath: /configuracoes
+              mountPath: /nf-config
       volumes:
         - name: config-volume
           configMap:

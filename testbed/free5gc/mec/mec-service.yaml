@@ -1,22 +1,22 @@
-# Servico MEC de BORDA (alvo do Local Breakout) e seu contraponto remoto.
+# EDGE MEC service (target of the Local Breakout) and its remote counterpart.
 #
-# Cada pod roda dois geradores de carga:
+# Each pod runs two load generators:
 #
-#   iperf      (5001)  saturacao bruta -- teto de vazao, sem loop fechado.
-#   vr-server  (9100)  aplicacao VR do TG1: downlink pesado de "frames"
-#                      fechado em loop com o uplink de pose/controle.
-#                      Metricas Prometheus em 9101. Codigo em
-#                      implementacoes/mec-vr/, montado via ConfigMap vr-app.
+#   iperf      (5001)  raw saturation -- throughput ceiling, no closed loop.
+#   vr-server  (9100)  VR application: heavy downlink of "frames"
+#                      closed in a loop with the pose/control uplink.
+#                      Prometheus metrics on 9101. Code in
+#                      testbed/mec-vr/, mounted through the vr-app ConfigMap.
 #
-# Os dois convivem porque medem coisas diferentes: o iperf responde "quanto
-# cabe", o vr-server responde "quanto demora o loop fechado" -- que e' a
-# pergunta do TG1. Rode um de cada vez nas campanhas.
+# The two coexist because they measure different things: iperf answers "how much
+# fits", vr-server answers "how long the closed loop takes" -- which is the
+# question of the experiment. Run one at a time in the campaigns.
 #
-# O ClusterIP NAO e' fixo: o mec-af (mec/mec-af.yaml) resolve este Service pelo
-# nome DNS e anuncia ao NEF o IP que o k8s alocou; o core leva a regra ate' o
-# I-UPF por Traffic Influence (NEF -> UDR -> PCF -> SMF). Trocar o IP ou
-# recriar o Service nao exige mexer em config nenhum do core nem reiniciar o
-# SMF. Para anunciar OUTRO servico, acrescente o nome dele em SERVICES no
+# The ClusterIP is NOT fixed: mec-af (mec/mec-af.yaml) resolves this Service by its
+# DNS name and announces to the NEF the IP that k8s allocated; the core carries the
+# rule to the I-UPF by Traffic Influence (NEF -> UDR -> PCF -> SMF). Changing the IP
+# or recreating the Service requires touching no config of the core and no restart
+# of the SMF. To announce ANOTHER service, add its name to SERVICES in
 # mec-af.yaml.
 apiVersion: v1
 kind: Service
@@ -65,31 +65,31 @@ spec:
         app: free5gc-mec-app
         prometheus: free5gc-monitor
     spec:
-      # MEC DOMAIN do EDGE NODE 1 (Figura 3 do TG1).
+      # MEC DOMAIN of EDGE NODE 1 (Fig. 3 of the TG1 proposal).
       #
-      # O TG1 desenha o Edge Node como UM no, com dUPF + LBO + MEC domain
-      # (AI-on-RAN + Edge Applications) dentro. Por isso este pod fica no MESMO
-      # no do I-UPF -- brix-porvir-01. Separar o MEC do dUPF que faz o breakout
-      # seria uma topologia diferente da proposta.
+      # The proposal draws the Edge Node as ONE node, with dUPF + LBO + MEC domain
+      # (AI-on-RAN + Edge Applications) inside. That is why this pod stays on the SAME
+      # node as the I-UPF -- brix-porvir-05. Separating the MEC from the dUPF that does
+      # the breakout would be a topology different from the proposal.
       #
-      # Consequencia direta: sob LBO o pacote sai do dUPF e chega aqui SEM
-      # tocar um fio. E' isso que a Figura 2 quer dizer com "traffic remains
+      # Direct consequence: under LBO the packet leaves the dUPF and arrives here WITHOUT
+      # touching a wire. This is what Fig. 2 means by "traffic remains
       # within the local edge environment".
       #
-      # O tester (UERANSIM) NAO esta aqui, e de proposito: o assinante nao mora
-      # dentro do host MEC. Ele fica em brix-porvir-02, no mesmo switch mas fora
-      # do Edge Node -- ver o comentario em tester/ueransim.yaml. Isso tambem
-      # libera os 2 nucleos fisicos deste brix para o gtp5g e para o vr-server,
-      # que foi o gargalo medido no perfil de 100 Mbps em 08/09/2026 (o servidor
-      # sustentou 53 dos 90 fps quando dividia o no com o gNB e o UE).
+      # The tester (UERANSIM) is NOT here, on purpose: the subscriber does not live
+      # inside the MEC host. It stays on brix-porvir-02, on the same switch but outside
+      # the Edge Node -- see the comment in tester/ueransim.yaml. This also frees
+      # the 2 physical cores of this brix for gtp5g and vr-server,
+      # which was the bottleneck measured in the 100 Mbps profile (the server
+      # sustained 53 of the 90 fps when it shared the node with the gNB and the UE).
       #
-      # O brix tambem e' o unico no com sudo, e o vr-server depende disso:
-      # net.core.rmem_max/wmem_max sao sysctl GLOBAIS do no, nao existem por
-      # namespace de rede, e sem levanta-los o pedido de 8 MB de buffer e'
-      # cortado em silencio (ver o bloco PACING abaixo).
+      # The brix is also the only node with sudo, and vr-server depends on it:
+      # net.core.rmem_max/wmem_max are GLOBAL sysctls of the node, they do not exist per
+      # network namespace, and without raising them the request for an 8 MB buffer is
+      # cut silently (see the PACING block below).
       nodeSelector:
         #kubernetes.io/arch: amd64
-        kubernetes.io/hostname: brix-porvir-01
+        kubernetes.io/hostname: brix-porvir-05
         #nodetype: server
       volumes:
         - name: vr-app
@@ -117,25 +117,25 @@ spec:
               protocol: TCP
               containerPort: 9101
           env:
-            # PACING (VR_SPREAD): ligado por padrao desde a mudanca no
-            # vr_server. O frame sai em rajadas pequenas espalhadas pelo
-            # periodo, em vez de todos os pacotes de uma vez. Um frame de
-            # 50 Mbps a 60 fps sao 87 pacotes (~104 kB) que, em rajada, saem na
-            # velocidade do veth -- nenhuma fila do caminho (socket do cliente,
-            # nr-gnb, nr-ue) absorve isso, e o que estoura vira "perda" que na
-            # verdade e' burst. E' o que trava as cargas mais pesadas.
-            #   VR_PACE_DUTY  fracao do periodo usada para espalhar (0.8)
-            #   VR_SPREAD=0   volta ao comportamento antigo (rajada unica)
-            # O custo do pacing entra no hold e, por consequencia, no m2p --
-            # IGUAL nos dois caminhos, e o net_rtt (que desconta o hold) nao
-            # muda. O relatorio traz o hold em coluna propria por isso.
+            # PACING (VR_SPREAD): on by default since the change in
+            # vr_server. The frame leaves in small bursts spread over the
+            # period, instead of all packets at once. A frame of
+            # 50 Mbps at 60 fps is 87 packets (~104 kB) that, in a burst, leave at
+            # the speed of the veth -- no queue on the path (socket of the client,
+            # nr-gnb, nr-ue) absorbs that, and what overflows becomes "loss" that is
+            # actually burst. This is what stalls the heavier loads.
+            #   VR_PACE_DUTY  fraction of the period used for spreading (0.8)
+            #   VR_SPREAD=0   back to the old behavior (a single burst)
+            # The cost of the pacing enters the hold and, as a consequence, the m2p --
+            # EQUAL on both paths, and net_rtt (which subtracts the hold) does not
+            # change. The report has the hold in its own column for this reason.
             #
-            # ANTES DE SUBIR A CARGA, confira no NO (nao no pod: sao sysctl
-            # globais, nao existem por namespace de rede):
+            # BEFORE RAISING THE LOAD, check on the NODE (not in the pod: they are global
+            # sysctls, they do not exist per network namespace):
             #   sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216
-            # Sem isso o pedido de 8 MB de SO_RCVBUF/SO_SNDBUF e' cortado em
-            # ~416 kB em silencio, e a perda resultante entra no relatorio como
-            # se fosse do caminho do UPF.
+            # Without it the request for 8 MB of SO_RCVBUF/SO_SNDBUF is cut to
+            # ~416 kB silently, and the resulting loss enters the report as
+            # if it belonged to the UPF path.
             - name: VR_ROLE
               value: "mec"
             - name: VR_PROFILE
@@ -177,13 +177,13 @@ spec:
       port: metrics-9101
       path: /metrics
 ---
-# Servico REMOTO (data network central), representando a nuvem/servico distante.
-# Serve de contraponto: no cenario B, o trafego para ca continua subindo
-# ate o PSA-UPF central, enquanto o trafego para o mec-app sai na borda.
+# REMOTE service (central data network), representing the cloud/distant service.
+# It is the counterpart: in Scenario B, the traffic to it keeps going up
+# to the central PSA-UPF, while the traffic to mec-app leaves at the edge.
 #
-# Sem ClusterIP fixo e FORA de SERVICES no mec-af: se ele fosse anunciado,
-# tambem sairia pela borda e o contraste da medicao sumiria. Os scripts de
-# campanha descobrem o IP com 'kubectl get svc remote-app'.
+# No fixed ClusterIP and OUTSIDE SERVICES in mec-af: if it were announced,
+# it would also leave at the edge and the contrast of the measurement would disappear.
+# The campaign scripts find the IP with 'kubectl get svc remote-app'.
 apiVersion: v1
 kind: Service
 metadata:
@@ -231,31 +231,31 @@ spec:
         app: free5gc-remote-app
         prometheus: free5gc-monitor
     spec:
-      # NUCLEO (<core-subnet>, do outro lado do roteador). Contraponto do
-      # mec-app: mesma imagem, mesmo perfil, mesma configuracao -- a UNICA
-      # diferenca entre os dois caminhos tem que ser onde o trafego sai do
+      # CORE (<core-subnet>, on the other side of the router). Counterpart of
+      # mec-app: same image, same profile, same configuration -- the ONLY
+      # difference between the two paths must be where the traffic leaves the
       # user plane.
       #
-      # SERVICO REMOTO, do outro lado do Backhaul/Transport Network.
+      # REMOTE SERVICE, on the other side of the Backhaul/Transport Network.
       #
-      # Nao aparece como caixa na Figura 3 do TG1 -- as duas figuras so'
-      # desenham o MEC domain como destino. Ele vem do texto da Secao 4.1:
+      # It does not appear as a box in Fig. 3 of the TG1 proposal -- both figures only
+      # draw the MEC domain as a destination. It comes from the text of Section 4.1:
       # "non-local traffic can still traverse the transport network towards
-      # remote services". E' o que prova que o ULCL esta CLASSIFICANDO, e nao
-      # mandando tudo para a borda: o mesmo UE, na mesma sessao PDU, com dois
-      # destinos que tomam caminhos diferentes.
+      # remote services". It is what proves that the ULCL is CLASSIFYING, and not
+      # sending everything to the edge: the same UE, in the same PDU session, with two
+      # destinations that take different paths.
       #
-      # metallica e NAO petshopboys: petshopboys e' o Server Node (5G Core), e
-      # o servico remoto nao faz parte do core -- ele e' alcancado ATRAVES do
-      # core. Po-lo no mesmo no da ancora ainda daria ao caminho remoto um hop
-      # N6 de graca que o caminho de borda paga.
+      # metallica and NOT petshopboys: petshopboys is the Server Node (5G Core), and
+      # the remote service is not part of the core -- it is reached THROUGH the
+      # core. Putting it on the same node as the anchor would give the remote path a free
+      # N6 hop that the edge path pays for.
       #
-      # ATENCAO na leitura do resultado: aqui NAO ha sudo para levantar
-      # net.core.rmem_max/wmem_max. O no concede ~416 kB contra os 8 MB
-      # pedidos, e e' do lado remoto que os estouros de fila do UDP aparecem
-      # primeiro quando a carga sobe. Perda muito diferente entre os dois
-      # caminhos invalida a comparacao (a guarda de saude do passo 12 barra a
-      # execucao) -- nao e' resultado do LBO, e' o buffer.
+      # CAUTION when reading the result: here there is NO sudo to raise
+      # net.core.rmem_max/wmem_max. The node grants ~416 kB against the 8 MB
+      # requested, and it is on the remote side that UDP queue overflows show up
+      # first when the load rises. A very different loss between the two
+      # paths invalidates the comparison (the health guard of step 12 rejects the
+      # execution) -- it is not a result of the LBO, it is the buffer.
       nodeSelector:
         kubernetes.io/arch: amd64
         kubernetes.io/hostname: metallica
@@ -286,8 +286,8 @@ spec:
               protocol: TCP
               containerPort: 9101
           env:
-            # MESMO perfil do mec-app -- a unica diferenca entre os dois
-            # caminhos tem que ser o lugar onde o trafego sai do user plane.
+            # SAME profile as mec-app -- the only difference between the two
+            # paths must be the place where the traffic leaves the user plane.
             - name: VR_ROLE
               value: "remote"
             - name: VR_PROFILE

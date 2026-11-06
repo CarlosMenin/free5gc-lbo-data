@@ -1,0 +1,157 @@
+{
+ "profile": "ar-industrial",
+ "workload": {
+  "bitrate_mbps": 12,
+  "fps": 60,
+  "pose_hz": 200,
+  "mtu": 1200,
+  "description": "Assisted AR: 1080p video with an annotation overlay (~12 Mbps). Light downlink, but the pose must be fast so that the overlay does not drift from the real object."
+ },
+ "executions": [
+  {
+   "execution": 1,
+   "proof": {
+    "mec": {
+     "delta": {
+      "upf": {
+       "rx_bytes": 312056,
+       "rx_pkts": 2001,
+       "tx_bytes": 15472800,
+       "tx_pkts": 12600
+      }
+     },
+     "frames": 599,
+     "poses": 2000
+    },
+    "remote": {
+     "delta": {
+      "upf": {
+       "rx_bytes": 312056,
+       "rx_pkts": 2001,
+       "tx_bytes": 15472800,
+       "tx_pkts": 12600
+      }
+     },
+     "frames": 599,
+     "poses": 2000
+    }
+   },
+   "paths": {
+    "a-mec": {
+     "label": "a-mec",
+     "server": "10.107.157.9:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.5,
+     "ul_window_s": 60.0,
+     "warmup_s": 5.0,
+     "pose_hz": 200.0,
+     "frames_complete": 3373,
+     "frames_partial": 227,
+     "dl_packets_rx_run": 75260,
+     "frames_incomplete_pct": 6.306,
+     "frames_in_stats": 3084,
+     "dl_packet_loss_pct": 0.4618,
+     "dl_throughput_mbps": 12.04,
+     "dl_continuity_pct": 99.99,
+     "ul_packets_tx": 12000,
+     "ul_pose_hz_real": 200.0,
+     "ul_throughput_mbps": 0.205,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.0,
+      "span_s": 54.995,
+      "frames_expected": 3300,
+      "dl_packets_rx": 68980,
+      "dl_packets_expected": 69300
+     },
+     "m2p_us": {
+      "min": 13806.0,
+      "p50": 18300.7,
+      "p95": 22558.895,
+      "p99": 22975.973,
+      "max": 28905.5,
+      "mean": 18454.5
+     },
+     "net_rtt_us": {
+      "min": 1011.1,
+      "p50": 2600.8999999999996,
+      "p95": 5946.3,
+      "p99": 6316.719000000001,
+      "max": 12037.5,
+      "mean": 3347.8
+     },
+     "hold_us": {
+      "min": 12264.0,
+      "p50": 15267.0,
+      "p95": 17054.85,
+      "max": 21978.0,
+      "mean": 15106.6
+     },
+     "jitter_us": 2277.8,
+     "jitter_net_us": 325.8,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 0,
+      "udp_in_errors": 0,
+      "ctxt_switches_involuntary": 152,
+      "clock_drift_us": 6.9
+     },
+     "_gtp": {
+      "upf": {
+       "rx_bytes": 1872759,
+       "rx_pkts": 12012,
+       "tx_bytes": 6852791544,
+       "tx_pkts": 4959971
+      },
+      "ue-tun": {
+       "rx_bytes": 92419280,
+       "rx_pkts": 75260,
+       "tx_bytes": 1872056,
+       "tx_pkts": 12001
+      }
+     },
+     "_order": 1,
+     "_srv": {
+      "frames_sent_total": 3600.0,
+      "frame_packets_total": 75600.0,
+      "frames_late_total": 0.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 11953.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.012121,
+      "sndbuf_bytes": 16777216.0
+     },
+     "_server_fps": 60.0,
+     "dl_packet_loss_srv_pct": 0.4497
+    }
+   },
+   "placement": {
+    "ueransim": "brix-porvir-02",
+    "upf": "petshopboys",
+    "mec-app": "brix-porvir-05",
+    "remote-app": "metallica",
+    "smf": "petshopboys",
+    "amf": "petshopboys"
+   },
+   "warnings": [
+    [
+     "general",
+     "socket buffer below the minimum (4096 kB) at 1 of 3 points:\n         remote-app (vr_server) @ metallica: 416 kB\n       What overflows the queue becomes 'loss' in the report without being loss at the UPF -- and if it\n       remains on one side only, the comparison between the paths reflects a difference of loss, not of path.\n       Run ON THE NODE (they are global sysctls; the container does not see them):\n         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216\n       To keep it after a reboot, write it to /etc/sysctl.d/99-tg2-vr.conf. On the core nodes (petshopboys, metallica),\n       where there is no sudo, the way out is to lower the load profile until both sides lose equally."
+    ]
+   ],
+   "output": null,
+   "seconds": 103.5,
+   "profile": "ar-industrial",
+   "attempts": 1
+  }
+ ],
+ "failures": [],
+ "duration_s": 60.0,
+ "warmup_s": 5.0,
+ "repetitions": 1
+}

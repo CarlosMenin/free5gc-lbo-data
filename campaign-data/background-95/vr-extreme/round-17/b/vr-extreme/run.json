@@ -1,0 +1,286 @@
+{
+ "profile": "vr-extreme",
+ "workload": {
+  "bitrate_mbps": 100,
+  "fps": 90,
+  "pose_hz": 250,
+  "mtu": 1200,
+  "description": "High-fidelity VR (~4K per eye). It finds the CEILING of the testbed: if the load does not flow, the report says where it stopped, and that is also a result."
+ },
+ "executions": [
+  {
+   "execution": 1,
+   "proof": {
+    "mec": {
+     "delta": {
+      "i-upf": {
+       "rx_bytes": 390056,
+       "rx_pkts": 2501,
+       "tx_bytes": 128203200,
+       "tx_pkts": 104400
+      },
+      "psa-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 0,
+       "tx_pkts": 0
+      }
+     },
+     "frames": 899
+    },
+    "remote": {
+     "delta": {
+      "i-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 0,
+       "tx_pkts": 0
+      },
+      "psa-upf": {
+       "rx_bytes": 390056,
+       "rx_pkts": 2501,
+       "tx_bytes": 128203200,
+       "tx_pkts": 104400
+      }
+     },
+     "frames": 899
+    }
+   },
+   "paths": {
+    "b-mec": {
+     "label": "b-mec",
+     "server": "10.107.157.9:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.5,
+     "ul_window_s": 60.0,
+     "warmup_s": 5.0,
+     "pose_hz": 250.0,
+     "frames_complete": 3793,
+     "frames_partial": 1607,
+     "dl_packets_rx_run": 620862,
+     "frames_incomplete_pct": 29.759,
+     "frames_in_stats": 3342,
+     "dl_packet_loss_pct": 0.9647,
+     "dl_throughput_mbps": 99.237,
+     "dl_continuity_pct": 99.97,
+     "ul_packets_tx": 15000,
+     "ul_pose_hz_real": 250.0,
+     "ul_throughput_mbps": 0.256,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.0,
+      "span_s": 54.983,
+      "frames_expected": 4949,
+      "dl_packets_rx": 568546,
+      "dl_packets_expected": 574084
+     },
+     "m2p_us": {
+      "min": 8957.2,
+      "p50": 10961.9,
+      "p95": 12639.795,
+      "p99": 13177.160000000007,
+      "max": 17538.2,
+      "mean": 10995.7
+     },
+     "net_rtt_us": {
+      "min": 415.5,
+      "p50": 604.8499999999999,
+      "p95": 1058.0099999999995,
+      "p99": 2200.503000000002,
+      "max": 7736.2,
+      "mean": 684.4
+     },
+     "hold_us": {
+      "min": 8249.0,
+      "p50": 10339.5,
+      "p95": 11915.95,
+      "max": 16123.0,
+      "mean": 10311.3
+     },
+     "jitter_us": 1602.7,
+     "jitter_net_us": 362.6,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 0,
+      "udp_in_errors": 0,
+      "ctxt_switches_involuntary": 1221,
+      "clock_drift_us": 6.0
+     },
+     "_gtp": {
+      "i-upf": {
+       "rx_bytes": 2340056,
+       "rx_pkts": 15001,
+       "tx_bytes": 769219200,
+       "tx_pkts": 626400
+      },
+      "psa-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 6557552544,
+       "tx_pkts": 4738116
+      },
+      "ue-tun": {
+       "rx_bytes": 762457832,
+       "rx_pkts": 620894,
+       "tx_bytes": 2340056,
+       "tx_pkts": 15001
+      }
+     },
+     "_order": 1,
+     "_srv": {
+      "frames_sent_total": 5400.0,
+      "frame_packets_total": 626400.0,
+      "frames_late_total": 7.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 15001.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.007778,
+      "sndbuf_bytes": 16777216.0
+     },
+     "_server_fps": 90.0,
+     "dl_packet_loss_srv_pct": 0.8841
+    },
+    "b-remote": {
+     "label": "b-remote",
+     "server": "10.110.69.110:9100",
+     "bind": "60.60.0.1",
+     "duration_s": 60.504,
+     "ul_window_s": 60.003,
+     "warmup_s": 5.0,
+     "pose_hz": 250.0,
+     "frames_complete": 742,
+     "frames_partial": 1578,
+     "dl_packets_rx_run": 264911,
+     "frames_incomplete_pct": 68.017,
+     "frames_in_stats": 577,
+     "dl_packet_loss_pct": 1.6167,
+     "dl_throughput_mbps": 37.248,
+     "dl_continuity_pct": 37.77,
+     "ul_packets_tx": 6448,
+     "ul_pose_hz_real": 107.5,
+     "ul_throughput_mbps": 0.11,
+     "window": {
+      "start_s": 5.0,
+      "nominal_s": 55.003,
+      "span_s": 20.775,
+      "frames_expected": 1870,
+      "dl_packets_rx": 213413,
+      "dl_packets_expected": 216920
+     },
+     "m2p_us": {
+      "min": 13025.6,
+      "p50": 18227.4,
+      "p95": 22294.539999999997,
+      "p99": 25011.976000000002,
+      "max": 27248.4,
+      "mean": 18354.4
+     },
+     "net_rtt_us": {
+      "min": 3754.9,
+      "p50": 7879.0,
+      "p95": 11190.059999999998,
+      "p99": 13635.412,
+      "max": 16424.2,
+      "mean": 7797.2
+     },
+     "hold_us": {
+      "min": 8310.0,
+      "p50": 10398.0,
+      "p95": 12765.8,
+      "max": 18349.0,
+      "mean": 10557.2
+     },
+     "jitter_us": 1931.5,
+     "jitter_net_us": 1265.4,
+     "health": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 30,
+      "udp_in_errors": 30,
+      "ctxt_switches_involuntary": 415,
+      "clock_drift_us": 4.3
+     },
+     "_gtp": {
+      "i-upf": {
+       "rx_bytes": 0,
+       "rx_pkts": 0,
+       "tx_bytes": 0,
+       "tx_pkts": 0
+      },
+      "psa-upf": {
+       "rx_bytes": 1005732,
+       "rx_pkts": 6447,
+       "tx_bytes": 3117899812,
+       "tx_pkts": 2283175
+      }
+     },
+     "_order": 2,
+     "_srv": {
+      "frames_sent_total": 2500.0,
+      "frame_packets_total": 290000.0,
+      "frames_late_total": 1.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 6447.0,
+      "sessions_expired_total": 1.0,
+      "pace_window_seconds": 0.007778,
+      "sndbuf_bytes": 425984.0
+     },
+     "_server_fps": 41.66458343749479,
+     "dl_packet_loss_srv_pct": 8.6514
+    }
+   },
+   "placement": {
+    "ueransim": "brix-porvir-02",
+    "i-upf": "brix-porvir-05",
+    "mec-app": "brix-porvir-05",
+    "psa-upf": "petshopboys",
+    "remote-app": "metallica",
+    "smf": "petshopboys",
+    "amf": "petshopboys"
+   },
+   "warnings": [
+    [
+     "general",
+     "socket buffer below the minimum (4096 kB) at 1 of 3 points:\n         remote-app (vr_server) @ metallica: 416 kB\n       What overflows the queue becomes 'loss' in the report without being loss at the UPF -- and if it\n       remains on one side only, the comparison between the paths reflects a difference of loss, not of path.\n       Run ON THE NODE (they are global sysctls; the container does not see them):\n         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216\n       To keep it after a reboot, write it to /etc/sysctl.d/99-tg2-vr.conf. On the core nodes (petshopboys, metallica),\n       where there is no sudo, the way out is to lower the load profile until both sides lose equally."
+    ],
+    [
+     "campaign",
+     "b-remote: the server emitted 42 fps against the 90 configured. The load that flowed is not the one requested, so the latency of this run is not comparable with that of the other path."
+    ],
+    [
+     "campaign",
+     "b-remote: the downlink existed in only 38% of the window (20.775 s of 55.003 s requested) -- the flow was INTERRUPTED, it is not packet loss. See sessions_expired and pose_packets to tell whether the uplink failed."
+    ],
+    [
+     "campaign",
+     "b-remote: the session expired 1 time(s) at the server -- it received no pose for longer than --session-timeout and stopped emitting frames. The client sent 6448 poses and the server received 6447 (100%). The problem is in the UPLINK of the path, not in the generator."
+    ],
+    [
+     "campaign",
+     "b-remote: the pose uplink ran at 108 Hz against the 250 requested -- the client did not sustain its own sending, and the motion-to-photon delay is inflated by stale poses."
+    ],
+    [
+     "campaign",
+     "loss very different between the paths (0.88% on the MEC path against 8.65% on the remote path). Only COMPLETE frames become latency samples, so the path that loses more drops exactly the samples of the instants with a full queue and looks better than it is. The comparison of this execution does not hold."
+    ]
+   ],
+   "output": null,
+   "seconds": 175.3,
+   "profile": "vr-extreme",
+   "attempts": 1
+  }
+ ],
+ "failures": [],
+ "duration_s": 60.0,
+ "warmup_s": 5.0,
+ "repetitions": 1
+}

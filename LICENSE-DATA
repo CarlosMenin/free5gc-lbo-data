@@ -5,8 +5,8 @@ https://creativecommons.org/licenses/by/4.0/
 Copyright (c) 2026 Carlos Eduardo Menin and Juliano Araujo Wickboldt
 
 This covers campaign-data/, calibration-data/, the data files of
-infrastructure-metrics/ (brutos/, janelas.csv, metricas-por-janela.csv,
-infra-pareado.json) and analysis/dados.json. The code is under the MIT
+infrastructure-metrics/ (raw/, windows.csv, metrics-per-window.csv,
+infra-paired.json) and analysis/runs.json. The code is under the MIT
 License (LICENSE).
 
 You may share and adapt the data for any purpose, provided that you give

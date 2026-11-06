@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Valida os manifestos ANTES de aplicar no cluster.
+Validates the manifests BEFORE applying them to the cluster.
 
-Checa as regras que o free5gc v4.2.3 aplica em tempo de execucao (extraidas
-dos structs govalidator em smf/pkg/factory/config.go e
-go-upf/pkg/factory/config.go) mais a consistencia entre arquivos.
+Checks the rules that free5GC v4.2.3 applies at runtime (taken from the
+govalidator structs in smf/pkg/factory/config.go and
+go-upf/pkg/factory/config.go) plus the consistency between files.
 
-Pega a classe de erro que custa mais caro: config sintaticamente valido que o
-NF rejeita no boot, ou nome de UPF que nao casa entre smfcfg e ueRouting --
-esses falham silenciosamente, sem sessao PDU, e sao chatos de rastrear no log.
+It catches the most expensive class of error: a syntactically valid config
+that the NF rejects at boot, or a UPF name that does not match between smfcfg
+and ueRouting -- these fail silently, with no PDU session, and are tedious to
+trace in the logs.
 
-Uso:
+Usage:
     python3 scripts/validate.py
 """
 import glob
@@ -31,7 +32,7 @@ def load_docs(path):
 
 
 def configmaps(path):
-    """Retorna {'<configmap>/<chave>': config_parseado} dos YAML embutidos."""
+    """Returns {'<configmap>/<key>': parsed_config} of the embedded YAML."""
     out = {}
     for d in load_docs(path):
         if d.get("kind") == "ConfigMap":
@@ -41,10 +42,10 @@ def configmaps(path):
     return out
 
 
-def configmaps_texto(path):
-    """Como configmaps(), mas com todo escalar como STRING (BaseLoader). Para
-    comparar fatias: o safe_load le 'sd: 010203' como octal (4227) e
-    'sd: 112233' como decimal, e o hex do S-NSSAI se perde."""
+def configmaps_text(path):
+    """Like configmaps(), but with every scalar as a STRING (BaseLoader). To
+    compare slices: safe_load reads 'sd: 010203' as octal (4227) and
+    'sd: 112233' as decimal, and the hex of the S-NSSAI is lost."""
     out = {}
     for d in load_docs(path):
         if d.get("kind") == "ConfigMap":
@@ -54,9 +55,9 @@ def configmaps_texto(path):
     return out
 
 
-def fatia(sst, sd):
-    """S-NSSAI normalizado: (1, '010203'). Aceita '0x112233' (UERANSIM),
-    '112233' (smfcfg) e '010203'."""
+def slice_(sst, sd):
+    """Normalized S-NSSAI: (1, '010203'). Accepts '0x112233' (UERANSIM),
+    '112233' (smfcfg) and '010203'."""
     sst, sd = str(sst).strip().lower(), str(sd or "").strip().lower()
     sst = int(sst, 16) if sst.startswith("0x") else int(sst)
     sd = f"{int(sd, 16):06x}" if sd.startswith("0x") else sd.zfill(6)
@@ -67,45 +68,45 @@ def check_smf(path, conf, errors):
     c = conf["configuration"]
     version = str(conf["info"]["version"])
     if version not in SMF_VERSIONS:
-        errors.append(f"{path}: smf info.version={version}, esperado {SMF_VERSIONS}")
+        errors.append(f"{path}: smf info.version={version}, expected {SMF_VERSIONS}")
 
     for name, node in c["userplaneInformation"]["upNodes"].items():
         if node["type"] not in ("AN", "UPF"):
-            errors.append(f"{path}: upNode {name} type='{node['type']}' (use AN ou UPF)")
+            errors.append(f"{path}: upNode {name} type='{node['type']}' (use AN or UPF)")
         for iface in node.get("interfaces", []):
             if iface["interfaceType"] not in ("N3", "N9"):
-                errors.append(f"{path}: {name} interfaceType invalido")
+                errors.append(f"{path}: {name} interfaceType invalid")
             for endpoint in iface["endpoints"]:
                 if endpoint == "0.0.0.0":
                     errors.append(
-                        f"{path}: {name} tem endpoint 0.0.0.0; este endereco vai "
-                        "no F-TEID entregue ao gNB e precisa ser roteavel"
+                        f"{path}: {name} has endpoint 0.0.0.0; this address goes "
+                        "into the F-TEID given to the gNB and must be routable"
                     )
 
     metrics = c.get("metrics")
     if metrics:
         if "scheme" not in metrics:
-            errors.append(f"{path}: metrics exige 'scheme'")
+            errors.append(f"{path}: metrics requires 'scheme'")
         if (metrics.get("port") == c["sbi"]["port"]
                 and metrics.get("bindingIPv4") == c["sbi"]["bindingIPv4"]):
-            errors.append(f"{path}: metrics e sbi no mesmo IP:porta; o SMF recusa subir")
+            errors.append(f"{path}: metrics and sbi on the same IP:port; the SMF refuses to start")
 
 
 def check_upf(path, conf, errors, warnings):
     version = str(conf["version"])
     if version not in UPF_VERSIONS:
-        errors.append(f"{path}: upf version={version}, esperado {UPF_VERSIONS}")
+        errors.append(f"{path}: upf version={version}, expected {UPF_VERSIONS}")
     if conf["pfcp"]["addr"] == "0.0.0.0":
-        errors.append(f"{path}: pfcp.addr nao pode ser 0.0.0.0")
+        errors.append(f"{path}: pfcp.addr cannot be 0.0.0.0")
     if conf["gtpu"]["forwarder"] != "gtp5g":
-        errors.append(f"{path}: gtpu.forwarder deve ser gtp5g")
+        errors.append(f"{path}: gtpu.forwarder must be gtp5g")
     for iface in conf["gtpu"]["ifList"]:
         if iface["type"] not in ("N3", "N9"):
-            errors.append(f"{path}: gtpu.ifList type invalido")
+            errors.append(f"{path}: gtpu.ifList type invalid")
     if len(conf["gtpu"]["ifList"]) > 1:
         warnings.append(
-            f"{path}: gtpu.ifList tem {len(conf['gtpu']['ifList'])} entradas, mas o "
-            "go-upf so usa a primeira (driver.go faz break); prefira 0.0.0.0"
+            f"{path}: gtpu.ifList has {len(conf['gtpu']['ifList'])} entries, but "
+            "go-upf only uses the first one (driver.go breaks); prefer 0.0.0.0"
         )
 
 
@@ -115,7 +116,7 @@ def check_scenario_b(errors):
     routing = next(v for k, v in maps.items() if "ueRouting" in k)
 
     if not smf.get("ulcl"):
-        errors.append("cenario B: 'ulcl: true' ausente; o ueRouting seria ignorado por inteiro")
+        errors.append("scenario B: 'ulcl: true' missing; ueRouting would be ignored entirely")
 
     nodes = set(smf["userplaneInformation"]["upNodes"])
     for group, info in routing["ueRoutingInfo"].items():
@@ -123,22 +124,22 @@ def check_scenario_b(errors):
             for side in (link["A"], link["B"]):
                 if side not in nodes:
                     errors.append(
-                        f"ueRouting[{group}]: no '{side}' nao existe em upNodes {sorted(nodes)}"
+                        f"ueRouting[{group}]: node '{side}' does not exist in upNodes {sorted(nodes)}"
                     )
         for spec in info.get("specificPath", []):
             try:
                 ipaddress.ip_network(spec["dest"], strict=False)
             except ValueError as exc:
-                errors.append(f"ueRouting[{group}]: dest '{spec['dest']}' invalido ({exc})")
+                errors.append(f"ueRouting[{group}]: dest '{spec['dest']}' invalid ({exc})")
             for hop in spec["path"]:
                 if hop not in nodes:
-                    errors.append(f"ueRouting[{group}]: path '{hop}' nao existe em upNodes")
+                    errors.append(f"ueRouting[{group}]: path '{hop}' does not exist in upNodes")
 
-    # LBO dinamico: o destino nao fica mais no ueRouting -- chega por Traffic
-    # Influence. O que precisa bater: todo nome em SERVICES existe como Service
-    # (o mec-af o resolve por DNS), nenhum deles fixa ClusterIP, e algum UPF
-    # declara o DNAI anunciado.
-    servicos = {
+    # Dynamic LBO: the destination is no longer in ueRouting -- it arrives through Traffic
+    # Influence. What must match: every name in SERVICES exists as a Service
+    # (mec-af resolves it by DNS), none of them fixes a ClusterIP, and some UPF
+    # declares the announced DNAI.
+    services = {
         d["metadata"]["name"]: d
         for d in load_docs("mec/mec-service.yaml") if d.get("kind") == "Service"
     }
@@ -157,54 +158,54 @@ def check_scenario_b(errors):
     }
     if af_env.get("DNAI") not in dnais:
         errors.append(
-            f"mec-af anuncia DNAI '{af_env.get('DNAI')}' mas nenhum UPF do smf.yaml o declara "
-            f"em dnaiList ({sorted(dnais)}); o SMF nao teria para onde desviar"
+            f"mec-af announces DNAI '{af_env.get('DNAI')}' but no UPF of smf.yaml declares it "
+            f"in dnaiList ({sorted(dnais)}); the SMF would have nowhere to divert to"
         )
-    anunciados = [s.strip() for s in (af_env.get("SERVICES") or "").split(",") if s.strip()]
-    if not anunciados:
-        errors.append("mec-af sem SERVICES: nenhum servico seria anunciado ao NEF")
-    for nome in anunciados:
-        curto = nome.split(".")[0]
-        if curto not in servicos:
+    announced = [s.strip() for s in (af_env.get("SERVICES") or "").split(",") if s.strip()]
+    if not announced:
+        errors.append("mec-af without SERVICES: no service would be announced to the NEF")
+    for name_str in announced:
+        short = name_str.split(".")[0]
+        if short not in services:
             errors.append(
-                f"mec-af anuncia '{nome}' mas nao existe Service '{curto}' em "
-                f"mec-service.yaml ({sorted(servicos)}); o DNS nao resolveria"
+                f"mec-af announces '{name_str}' but there is no Service '{short}' in "
+                f"mec-service.yaml ({sorted(services)}); DNS would not resolve it"
             )
-        elif "clusterIP" in servicos[curto]["spec"]:
+        elif "clusterIP" in services[short]["spec"]:
             errors.append(
-                f"{curto}: clusterIP fixo no manifesto; o LBO dinamico nao precisa dele "
-                "e ele colide se o cluster ja' alocou esse IP"
+                f"{short}: fixed clusterIP in the manifest; the dynamic LBO does not need it "
+                "and it collides if the cluster already allocated that IP"
             )
-    if "remote-app" in [n.split(".")[0] for n in anunciados]:
-        errors.append("mec-af anuncia o remote-app; ele e' o contraponto da medicao e "
-                      "precisa continuar subindo ate' o PSA-UPF")
-    # Cada fatia anunciada precisa de um UPF com o DNAI NELA. Sem isso o SMF nao
-    # acha caminho para a PCC rule e o ApplyPccRules das sessoes daquela fatia
-    # falha -- e o gen-manifest.py do mec-af ainda traz a 112233 (a do ruido).
-    smf_txt = next(v for k, v in configmaps_texto("scenario-b-dupf/smf.yaml").items()
+    if "remote-app" in [n.split(".")[0] for n in announced]:
+        errors.append("mec-af announces remote-app; it is the counterpoint of the measurement and "
+                      "must keep going up to the PSA-UPF")
+    # Each announced slice needs a UPF with the DNAI IN IT. Without it, the SMF finds
+    # no path for the PCC rule and ApplyPccRules of the sessions of that slice
+    # fails -- and the gen_manifest.py of mec-af still carries 112233 (the background one).
+    smf_txt = next(v for k, v in configmaps_text("scenario-b-dupf/smf.yaml").items()
                    if "smfConfig" in k)["configuration"]
     for item in (af_env.get("SNSSAIS") or "").split(","):
         sst, _, sd = item.strip().partition(":")
         if not sst:
             continue
-        alvo = fatia(sst, sd)
-        com_dnai = [
-            nome for nome, n in smf_txt["userplaneInformation"]["upNodes"].items()
+        tgt = slice_(sst, sd)
+        with_dnai = [
+            name_str for name_str, n in smf_txt["userplaneInformation"]["upNodes"].items()
             if n["type"] == "UPF"
             for s in n.get("sNssaiUpfInfos", [])
-            if fatia(s["sNssai"]["sst"], s["sNssai"].get("sd")) == alvo
+            if slice_(s["sNssai"]["sst"], s["sNssai"].get("sd")) == tgt
             for d in s.get("dnnUpfInfoList", [])
             if af_env.get("DNAI") in d.get("dnaiList", [])
         ]
-        if not com_dnai:
+        if not with_dnai:
             errors.append(
-                f"mec-af anuncia a fatia {alvo[0]}:{alvo[1]}, mas nenhum UPF do smf.yaml do B "
-                f"tem o DNAI '{af_env.get('DNAI')}' nela; a PCC rule de breakout nao teria "
-                "caminho (o gen-manifest.py do mec-af ainda traz a 112233?)")
+                f"mec-af announces slice {tgt[0]}:{tgt[1]}, but no UPF of the smf.yaml of B "
+                f"has DNAI '{af_env.get('DNAI')}' in it; the breakout PCC rule would have no "
+                "path (does the gen_manifest.py of mec-af still carry 112233?)")
 
-    check_ruido(smf_txt, routing, errors)
+    check_background(smf_txt, routing, errors)
 
-    # nodeID declarado no SMF x nodeID que o proprio UPF anuncia via PFCP
+    # nodeID declared in the SMF x nodeID that the UPF itself announces through PFCP
     declared = {
         n["nodeID"] for n in smf["userplaneInformation"]["upNodes"].values()
         if n["type"] == "UPF"
@@ -214,56 +215,57 @@ def check_scenario_b(errors):
             if "upfConfig" in key:
                 if conf["pfcp"]["nodeID"] not in declared:
                     errors.append(
-                        f"{path}: nodeID '{conf['pfcp']['nodeID']}' nao consta no SMF "
-                        f"{sorted(declared)}; a associacao PFCP nunca fecha"
+                        f"{path}: nodeID '{conf['pfcp']['nodeID']}' is not in the SMF "
+                        f"{sorted(declared)}; the PFCP association never completes"
                     )
 
 
-def check_ruido(smf, routing, errors):
-    """UE de trafego de fundo (congestao/ruido-gtp.yaml): no cenario B ele tem
-    que ancorar no PSA-UPF SEM passar pelo I-UPF. Quem decide e' a fatia dele
-    -- o SMF pula UPF que nao atende a fatia -- mais um link gNB -> PSA-UPF que
-    venha DEPOIS do gNB -> I-UPF (senao a fatia do experimento tambem pularia o
-    I-UPF). Tudo isso falha calado: o ruido passaria pela borda."""
+def check_background(smf, routing, errors):
+    """UE of the background traffic (background/background-gtp.yaml): in Scenario B
+    it must be anchored at the PSA-UPF WITHOUT going through the I-UPF. What
+    decides is its slice -- the SMF skips a UPF that does not serve the slice --
+    plus a gNB -> PSA-UPF link that comes AFTER gNB -> I-UPF (otherwise the
+    slice of the experiment would also skip the I-UPF). All of this fails
+    silently: the background would go through the edge."""
     try:
-        maps = configmaps_texto("congestao/ruido-gtp.yaml")
+        maps = configmaps_text("background/background-gtp.yaml")
     except FileNotFoundError:
         return
     ue = next((v for k, v in maps.items() if k.endswith("/ue.yaml")), None)
     if not ue:
         return
     supi = ue["supi"]
-    alvo = fatia(ue["sessions"][0]["slice"]["sst"], ue["sessions"][0]["slice"]["sd"])
+    tgt = slice_(ue["sessions"][0]["slice"]["sst"], ue["sessions"][0]["slice"]["sd"])
     nodes = smf["userplaneInformation"]["upNodes"]
 
-    def atende(nome):
-        return any(fatia(s["sNssai"]["sst"], s["sNssai"].get("sd")) == alvo
-                   for s in nodes.get(nome, {}).get("sNssaiUpfInfos", []))
+    def serves(name_str):
+        return any(slice_(s["sNssai"]["sst"], s["sNssai"].get("sd")) == tgt
+                   for s in nodes.get(name_str, {}).get("sNssaiUpfInfos", []))
 
-    if atende("I-UPF"):
-        errors.append(f"ruido: o I-UPF atende a fatia {alvo[0]}:{alvo[1]} do UE de ruido; o "
-                      "fundo passaria pelo Edge Node em vez de descer direto do PSA-UPF")
-    if not atende("PSA-UPF"):
-        errors.append(f"ruido: o PSA-UPF nao atende a fatia {alvo[0]}:{alvo[1]}; a sessao do "
-                      "UE de ruido nao teria ancora no cenario B")
+    if serves("I-UPF"):
+        errors.append(f"background: the I-UPF serves slice {tgt[0]}:{tgt[1]} of the background UE; the "
+                      "background would go through the Edge Node instead of descending directly from the PSA-UPF")
+    if not serves("PSA-UPF"):
+        errors.append(f"background: the PSA-UPF does not serve slice {tgt[0]}:{tgt[1]}; the session of the "
+                      "background UE would have no anchor in Scenario B")
     if not any(i["interfaceType"] == "N3" for i in nodes.get("PSA-UPF", {}).get("interfaces", [])):
-        errors.append("ruido: o PSA-UPF sem interface N3; o SMF nao tem F-TEID para "
-                      "entregar ao gNB de ruido e a sessao nao fecha")
+        errors.append("background: the PSA-UPF has no N3 interface; the SMF has no F-TEID to "
+                      "give to the background gNB and the session does not complete")
     links = [(l["A"], l["B"]) for l in smf["userplaneInformation"]["links"]]
     idx = {}
-    for i, par in enumerate(links):
-        idx.setdefault(par, i)          # o que vale e' a PRIMEIRA ocorrencia
-    direto, borda = idx.get(("gNB1", "PSA-UPF")), idx.get(("gNB1", "I-UPF"))
-    if direto is None:
-        errors.append("ruido: falta o link gNB1 -> PSA-UPF; sem ele o UE de ruido "
-                      "nao tem caminho no cenario B")
-    elif borda is not None and direto < borda:
-        errors.append("ruido: o link gNB1 -> PSA-UPF vem ANTES do gNB1 -> I-UPF; o SMF "
-                      "percorre na ordem da lista e a fatia do experimento perderia o I-UPF")
-    for grupo, info in routing["ueRoutingInfo"].items():
+    for i, pair in enumerate(links):
+        idx.setdefault(pair, i)          # what counts is the FIRST occurrence
+    direct, edge = idx.get(("gNB1", "PSA-UPF")), idx.get(("gNB1", "I-UPF"))
+    if direct is None:
+        errors.append("background: link gNB1 -> PSA-UPF is missing; without it the background UE "
+                      "has no path in Scenario B")
+    elif edge is not None and direct < edge:
+        errors.append("background: link gNB1 -> PSA-UPF comes BEFORE gNB1 -> I-UPF; the SMF "
+                      "walks the list in order and the slice of the experiment would lose the I-UPF")
+    for grp, info in routing["ueRoutingInfo"].items():
         if supi in (info.get("members") or []):
-            errors.append(f"ruido: {supi} esta no grupo ULCL {grupo}; ele nao deve "
-                          "receber o tratamento do experimento")
+            errors.append(f"background: {supi} is in ULCL group {grp}; it must not "
+                          "receive the treatment of the experiment")
 
 
 def main():
@@ -277,23 +279,23 @@ def main():
                 elif "upfConfig" in key:
                     check_upf(path, conf, errors, warnings)
                 elif "udrConfig" in key and str(conf["info"]["version"]) not in UDR_VERSIONS:
-                    errors.append(f"{path}: udr info.version deve ser {UDR_VERSIONS} na v4.2.3")
+                    errors.append(f"{path}: udr info.version must be {UDR_VERSIONS} in v4.2.3")
                 elif "webuiConfig" in key and str(conf["info"]["version"]) not in WEBUI_VERSIONS:
-                    errors.append(f"{path}: webui info.version deve ser {WEBUI_VERSIONS} na v4.2.3")
+                    errors.append(f"{path}: webui info.version must be {WEBUI_VERSIONS} in v4.2.3")
         except (yaml.YAMLError, KeyError, TypeError) as exc:
-            errors.append(f"{path}: falha ao interpretar ({exc})")
+            errors.append(f"{path}: failed to parse ({exc})")
 
     check_scenario_b(errors)
 
     for w in warnings:
-        print(f"AVISO: {w}")
+        print(f"WARNING: {w}")
     for e in errors:
-        print(f"ERRO : {e}")
+        print(f"ERROR  : {e}")
 
     if errors:
-        print(f"\n{len(errors)} problema(s) encontrado(s).")
+        print(f"\n{len(errors)} problem(s) found.")
         return 1
-    print("\nManifestos consistentes.")
+    print("\nManifests consistent.")
     return 0
 
 

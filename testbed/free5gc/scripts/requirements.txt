@@ -1,8 +1,8 @@
-# O MongoDB do testbed e' a imagem free5gmano/nextepc-mongodb == mongod 4.0.5,
-# que fala wire protocol 7. O pymongo 4.14 removeu o suporte a MongoDB 4.0 e
-# aborta com ConfigurationError antes de qualquer query. 4.13.2 e' a ultima
-# versao que conecta.
+# The MongoDB of the testbed is the free5gmano/nextepc-mongodb image == mongod 4.0.5,
+# which speaks wire protocol 7. pymongo 4.14 removed the support for MongoDB 4.0 and
+# aborts with ConfigurationError before any query. 4.13.2 is the last
+# version that connects.
 pymongo>=4.9,<4.14
 
-# validate.py parseia os manifestos e os YAML embutidos nos ConfigMaps.
+# validate.py parses the manifests and the YAML embedded in the ConfigMaps.
 pyyaml>=6
