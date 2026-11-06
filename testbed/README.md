@@ -6,10 +6,6 @@ the Kubernetes manifests, the Application Function (AF) and the closed-loop
 instrument. It is not needed to reproduce the analysis (see Guide 1 in the top
 README). This page explains how to run a measurement again.
 
-The maintained versions of the testbed and of the instrument are in
-[free5gc-lbo](https://github.com/CarlosMenin/free5gc-lbo) and
-[photonpath](https://github.com/CarlosMenin/photonpath).
-
 ## Layout
 
 ```

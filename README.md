@@ -14,14 +14,6 @@ the edge–core link. This repository holds every measurement of that
 evaluation, the code that turns the measurements into the tables and figures
 of the paper, and the code that measured them.
 
-Related repositories:
-
-- [free5gc-lbo](https://github.com/CarlosMenin/free5gc-lbo): the testbed
-  (free5GC v4.2.3 on Kubernetes, ULCL breakout, Traffic Influence AF), with
-  documentation for deploying it.
-- [photonpath](https://github.com/CarlosMenin/photonpath): the closed-loop
-  measurement instrument.
-
 ## Contents
 
 | Folder | Size | What it holds |
