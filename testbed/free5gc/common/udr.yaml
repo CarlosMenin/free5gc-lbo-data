@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: udr-config
+  namespace: free5gc
+data:
+  udrConfig.yaml: |
+    # ATENCAO (migracao v3.3.0 -> v4.2.3):
+    #   - info.version passou de 1.0.2 para 1.1.0
+    #   - novo campo obrigatorio dbConnectorType
+    info:
+      version: 1.1.0
+      description: UDR initial local configuration
+    configuration:
+      sbi:
+        scheme: http
+        registerIPv4: udr.free5gc.svc.cluster.local
+        bindingIPv4: 0.0.0.0
+        port: 8000
+        tls:
+          pem: cert/udr.pem
+          key: cert/udr.key
+      dbConnectorType: mongodb
+      mongodb:
+        name: free5gc
+        url: mongodb://mongo:27017
+      nrfUri: http://nrf.free5gc.svc.cluster.local:8000
+
+      metrics:
+        enable: true
+        scheme: http
+        bindingIPv4: 0.0.0.0
+        port: 9091
+        namespace: free5gc
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-udr
+  namespace: free5gc
+  labels:
+    epc-mode: udr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: udr
+  template:
+    metadata:
+      labels:
+        epc-mode: udr
+        app: free5gc-udr
+        version: v4.2.3
+        prometheus: free5gc-monitor
+    spec:
+      hostname: udr-pod
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        nodetype: server
+      containers:
+        - name: udr
+          image: free5gc/udr:v4.2.3
+          imagePullPolicy: IfNotPresent
+          command: ["./udr", "-c", "/configuracoes/udrConfig.yaml"]
+          env:
+            - name: GIN_MODE
+              value: release
+          ports:
+            - name: http2-8000
+              protocol: TCP
+              containerPort: 8000
+            - name: metrics-9091
+              protocol: TCP
+              containerPort: 9091
+          volumeMounts:
+            - name: config-volume
+              mountPath: /configuracoes
+      volumes:
+        - name: config-volume
+          configMap:
+            name: udr-config
+            defaultMode: 0777
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udr
+  namespace: free5gc
+  labels:
+    app: free5gc-udr
+spec:
+  selector:
+    epc-mode: udr
+    app: free5gc-udr
+  ports:
+    - name: http2-8000
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: metrics-9091
+      protocol: TCP
+      port: 9091
+      targetPort: 9091
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-udr
+  namespace: free5gc
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: free5gc-udr
+  endpoints:
+    - interval: 15s
+      port: metrics-9091
+      path: /metrics
+---

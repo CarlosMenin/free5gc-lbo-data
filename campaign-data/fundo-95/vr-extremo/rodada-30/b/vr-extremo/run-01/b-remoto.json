@@ -1,0 +1,64 @@
+{
+  "label": "b-remoto",
+  "server": "10.110.69.110:9100",
+  "bind": "60.60.0.1",
+  "duration_s": 60.502,
+  "ul_window_s": 60.002,
+  "warmup_s": 5.0,
+  "pose_hz": 250.0,
+  "frames_complete": 1394,
+  "frames_partial": 4006,
+  "dl_packets_rx_run": 614494,
+  "frames_incomplete_pct": 74.185,
+  "frames_in_stats": 1194,
+  "dl_packet_loss_pct": 1.9519,
+  "dl_throughput_mbps": 98.265,
+  "dl_continuity_pct": 99.98,
+  "ul_packets_tx": 14999,
+  "ul_pose_hz_real": 250.0,
+  "ul_throughput_mbps": 0.256,
+  "janela": {
+    "inicio_s": 5.0,
+    "nominal_s": 55.002,
+    "span_s": 54.993,
+    "frames_esperados": 4950,
+    "dl_packets_rx": 562992,
+    "dl_packets_esperados": 574200
+  },
+  "m2p_us": {
+    "min": 13296.1,
+    "p50": 17423.7,
+    "p95": 21849.024999999998,
+    "p99": 24067.393999999997,
+    "max": 27961.8,
+    "mean": 17685.8
+  },
+  "net_rtt_us": {
+    "min": 4621.0,
+    "p50": 7053.75,
+    "p95": 10478.339999999998,
+    "p99": 13255.443999999998,
+    "max": 16829.8,
+    "mean": 7255.3
+  },
+  "hold_us": {
+    "min": 8284.0,
+    "p50": 10275.0,
+    "p95": 12492.849999999999,
+    "max": 20240.0,
+    "mean": 10430.5
+  },
+  "jitter_us": 2459.5,
+  "jitter_net_us": 1661.3,
+  "saude": {
+    "rx_timestamp_kernel": true,
+    "sock_rcvbuf_bytes": 16777216,
+    "dl_sock_drops": 0,
+    "dl_sock_overflow_pkts": null,
+    "dl_sock_overflow_run": null,
+    "udp_rcvbuf_errors": 84,
+    "udp_in_errors": 84,
+    "ctxt_switches_involuntary": 865,
+    "clock_drift_us": 6.7
+  }
+}

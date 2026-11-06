@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use these data or scripts, please cite the paper below."
+title: "Local breakout under transport load: data and analysis"
+type: dataset
+authors:
+  - family-names: Menin
+    given-names: Carlos Eduardo
+    affiliation: "Federal University of Rio Grande do Sul (UFRGS)"
+  - family-names: Wickboldt
+    given-names: Juliano Araujo
+    affiliation: "Federal University of Rio Grande do Sul (UFRGS)"
+license:
+  - MIT
+  - CC-BY-4.0
+keywords:
+  - 5G
+  - user plane function
+  - local breakout
+  - edge computing
+  - network management
+  - measurement
+preferred-citation:
+  type: conference-paper
+  title: "User-Plane Placement at the Edge under Transport Load: A Calibrated Evaluation of Local Breakout for Network Management"
+  authors:
+    - family-names: Menin
+      given-names: Carlos Eduardo
+    - family-names: Wickboldt
+      given-names: Juliano Araujo
+  conference:
+    name: "IEEE/IFIP Network Operations and Management Symposium (NOMS 2027)"
+  year: 2027
+  notes: "Submitted."

@@ -1,0 +1,268 @@
+# CENARIO A (baseline): SMF com um unico UPF centralizado, SEM ULCL.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smf-config
+  namespace: free5gc
+data:
+  smfConfig.yaml: |
+    info:
+      version: 1.0.7
+      description: SMF - cenario A (UPF centralizado)
+
+    configuration:
+      smfName: SMF
+      sbi:
+        scheme: http
+        registerIPv4: smf.free5gc.svc.cluster.local
+        bindingIPv4: 0.0.0.0
+        port: 8000
+        tls:
+          key: cert/smf.key
+          pem: cert/smf.pem
+      serviceNameList:
+        - nsmf-pdusession
+        - nsmf-event-exposure
+        - nsmf-oam
+        - nsmf-callback   # NOVO na v4.x
+      snssaiInfos:
+        - sNssai:
+            sst: 1
+            sd: 010203
+          dnnInfos:
+            - dnn: internet
+              dns:
+                ipv4: 10.96.0.10
+                ipv6: 2001:4860:4860::8888
+        - sNssai:
+            sst: 1
+            sd: 112233
+          dnnInfos:
+            - dnn: internet
+              dns:
+                ipv4: 10.96.0.10
+                ipv6: 2001:4860:4860::8888
+      plmnList:
+        - mcc: 208
+          mnc: 93
+      locality: area1
+      pfcp:
+        nodeID: smf.free5gc.svc.cluster.local
+        listenAddr: 0.0.0.0
+        externalAddr: smf.free5gc.svc.cluster.local
+        heartbeatInterval: 5s
+      userplaneInformation:
+        upNodes:
+          gNB1:
+            type: AN
+          UPF:
+            type: UPF
+            nodeID: upf.free5gc.svc.cluster.local
+            addr: upf.free5gc.svc.cluster.local
+            # O SMF valida sobreposicao de pools GLOBALMENTE (isOverlap sobre
+            # allUEIPPools em internal/context/user_plane_information.go): ele
+            # NAO separa por S-NSSAI. Declarar 60.60.0.0/16 nas duas slices
+            # aborta o boot com "overlap cidr value between UPFs". Por isso o
+            # /16 e' partido em dois /17 disjuntos - ambos continuam dentro do
+            # cidr 60.60.0.0/16 do upfcfg, entao a rota/NAT do UPF nao muda.
+            sNssaiUpfInfos:
+              - sNssai:
+                  sst: 1
+                  sd: 010203
+                dnnUpfInfoList:
+                  - dnn: internet
+                    pools:
+                      - cidr: 60.60.0.0/17
+              - sNssai:
+                  sst: 1
+                  sd: 112233
+                dnnUpfInfoList:
+                  - dnn: internet
+                    pools:
+                      - cidr: 60.60.128.0/17
+            interfaces:
+              # endpoints NAO pode ser 0.0.0.0: este endereco vai no F-TEID
+              # entregue ao gNB, entao precisa ser roteavel.
+              - interfaceType: N3
+                endpoints:
+                  - upf.free5gc.svc.cluster.local
+                networkInstances:
+                  - internet
+        links:
+          - A: gNB1
+            B: UPF
+      t3591:
+        enable: true
+        expireTime: 16s
+        maxRetryTimes: 3
+      t3592:
+        enable: true
+        expireTime: 16s
+        maxRetryTimes: 3
+      nrfUri: http://nrf.free5gc.svc.cluster.local:8000
+      # URR (Usage Reporting Rules) -- o que o UPF reporta ao SMF para charging.
+      #
+      # Os valores de exemplo do free5gc (urrThreshold: 1000, em BYTES) fazem o
+      # UPF mandar um Usage Report PFCP a cada 1000 bytes trafegados. Numa demo
+      # de ping isso e' inocente; sob a carga VR e' fatal:
+      #
+      #     6 Mbps  ->    ~750 relatorios/s
+      #    50 Mbps  ->   ~6250 relatorios/s
+      #
+      # Medido em 08/09/2026: 27.814 USA Reports num unico I-UPF. O SMF nao
+      # sustenta esse volume de transacoes PFCP, os numeros de sequencia
+      # colidem ("Sequence number 99911 already exist!"), a associacao com o
+      # UPF CAI ("UPF[...] not associated with SMF"), o plano de dados morre e
+      # sessoes PDU novas passam a falhar. O SMF chega a entrar em panic no
+      # handler HTTP. Era esta a causa do caminho remoto "parar sozinho" no
+      # meio das campanhas.
+      #
+      # E nada disso serve para coisa alguma aqui: nao ha CHF no testbed
+      # ("chf selection error: no CHF found in CHFSelection"), entao o relatorio
+      # e' produzido, transportado e descartado. Os limiares abaixo mantem o URR
+      # existindo (o free5gc precisa da URR para montar a sessao) sem que ele
+      # dispare durante uma campanha.
+      urrPeriod: 3600
+      urrThreshold: 1000000000
+      requestedUnit: 1000000000
+
+      metrics:
+        enable: true
+        scheme: http
+        bindingIPv4: 0.0.0.0
+        port: 9091
+        namespace: free5gc
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+---
+# O SMF le o arquivo de ueRouting INCONDICIONALMENTE no boot (cmd/main.go chama
+# factory.ReadUERoutingConfig antes de qualquer coisa; nao ha checagem de ulcl).
+# Sem o -u ele cai no default "./config/uerouting.yaml", que nao existe na
+# imagem, e aborta com:
+#     SMF Run error: ReadConfig [] Error: open ./config/uerouting.yaml: no such
+#     file or directory
+# Ou seja: mesmo sem ULCL o cenario A precisa de um arquivo. Este e' vazio de
+# proposito -- "ueRoutingInfo" e' valid:"optional", entao um "info" valido basta,
+# e com ulcl ausente (false) o InitSMFUERouting nem chega a olhar o conteudo.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ue-routing-info
+  namespace: free5gc
+data:
+  ueRouting.yaml: |
+    info:
+      version: 1.0.7
+      description: Roteamento de UE - cenario A (sem ULCL, arquivo vazio)
+
+    ueRoutingInfo: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-smf
+  namespace: free5gc
+  labels:
+    epc-mode: smf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: smf
+  template:
+    metadata:
+      labels:
+        epc-mode: smf
+        app: free5gc-smf
+        version: v4.2.3
+        prometheus: free5gc-monitor
+    spec:
+      hostname: smf-pod
+      # SERVER NODE (5G Core), junto do resto do Centralized Control Plane e
+      # IGUAL ao SMF do cenario B (scenario-b-dupf/smf.yaml). A comparacao
+      # A x B so' vale se a unica coisa que muda entre os dois for o PLANO DE
+      # USUARIO -- deixar o SMF do cenario A em outro no que o do B introduz
+      # uma diferenca de sinalizacao (N4 para o UPF, N11 para o AMF) que nao
+      # tem nada a ver com a pergunta.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        nodetype: server
+      containers:
+        - name: smf
+          image: free5gc/smf:v4.2.3
+          imagePullPolicy: IfNotPresent
+          # O -u e' obrigatorio mesmo sem ULCL: o SMF le o arquivo no boot
+          # independente da flag. Ver o comentario no ConfigMap ue-routing-info.
+          command: ["./smf", "-c", "/configuracoes/smfConfig.yaml", "-u", "/free5gc/ue/ueRouting.yaml"]
+          env:
+            - name: GIN_MODE
+              value: release
+          ports:
+            - name: http2-8000
+              protocol: TCP
+              containerPort: 8000
+            - name: udp-8805
+              protocol: UDP
+              containerPort: 8805
+            - name: metrics-9091
+              protocol: TCP
+              containerPort: 9091
+          volumeMounts:
+            - name: config-volume
+              mountPath: /configuracoes
+            - name: config-uerouting
+              mountPath: /free5gc/ue
+      volumes:
+        - name: config-volume
+          configMap:
+            name: smf-config
+            defaultMode: 0777
+        - name: config-uerouting
+          configMap:
+            name: ue-routing-info
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf
+  namespace: free5gc
+  labels:
+    app: free5gc-smf
+spec:
+  selector:
+    epc-mode: smf
+    app: free5gc-smf
+  ports:
+    - name: http2-8000
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: udp-8805
+      protocol: UDP
+      port: 8805
+      targetPort: 8805
+    - name: metrics-9091
+      protocol: TCP
+      port: 9091
+      targetPort: 9091
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-smf
+  namespace: free5gc
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: free5gc-smf
+  endpoints:
+    - interval: 15s
+      port: metrics-9091
+      path: /metrics
+---

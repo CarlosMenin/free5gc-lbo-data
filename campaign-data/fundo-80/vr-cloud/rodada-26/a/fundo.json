@@ -1,0 +1,37 @@
+{
+  "modo": "gtp",
+  "nivel": 80,
+  "capacidade_mbps": 889.0970251009853,
+  "pedido_mbps": 711.2776200807883,
+  "ligado": true,
+  "cruzou_mbps": 699.4153766272505,
+  "fracao_entregue": 0.9833226252047822,
+  "descartes_receptor": null,
+  "problemas": [],
+  "taxa_iperf_mbps": 688.9,
+  "datagrama": 1356,
+  "fluxos": 3,
+  "segundos_ligado": 62.7,
+  "enviado_mbps": 711.2670238235352,
+  "gtpu_ip_mbps": 713.4036841597954,
+  "gtpu_pkts": 3917244,
+  "perda_caminho_pct": 1.6662725529681288,
+  "entregues_ue_pkts": 127477,
+  "descartados_no_ruido_pkts": 3789767,
+  "erro_iperf": "interrupt - the client has terminated",
+  "no_gerador": "petshopboys",
+  "no_receptor": "brix-porvir-03",
+  "no_ancora": "petshopboys",
+  "ue_ruido_ip": "60.60.128.1",
+  "atraso_s": 0.7,
+  "preparo_s": 7.7,
+  "ue_recriado": false,
+  "origem_gtpu": {
+    "10.107.111.64": 30
+  },
+  "origem": "GTP-U do fundo veio so' da upf: upf via 10.107.111.64 (30)",
+  "vezes_ligado": 1,
+  "capacidade_medidas": [
+    889.1
+  ]
+}

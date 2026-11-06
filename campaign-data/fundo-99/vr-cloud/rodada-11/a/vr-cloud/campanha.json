@@ -1,0 +1,157 @@
+{
+  "perfil": "vr-cloud",
+  "carga": {
+    "bitrate_mbps": 50,
+    "fps": 90,
+    "pose_hz": 250,
+    "mtu": 1200,
+    "descricao": "VR interativo com render na borda: ~2K por olho a 90 fps (~50 Mbps em HEVC) e pose a 250 Hz, a taxa tipica da IMU de um headset. E' o perfil do TG1 e o caso mais exigente que ainda e' realista."
+  },
+  "execucoes": [
+    {
+      "execucao": 1,
+      "prova": {
+        "mec": {
+          "delta": {
+            "upf": {
+              "rx_bytes": 390056,
+              "rx_pkts": 2501,
+              "tx_bytes": 64101600,
+              "tx_pkts": 52200
+            }
+          },
+          "frames": 899,
+          "poses": 2500
+        },
+        "remoto": {
+          "delta": {
+            "upf": {
+              "rx_bytes": 390056,
+              "rx_pkts": 2501,
+              "tx_bytes": 64101600,
+              "tx_pkts": 52200
+            }
+          },
+          "frames": 899,
+          "poses": 2500
+        }
+      },
+      "campanha": {
+        "a-mec": {
+          "label": "a-mec",
+          "server": "10.107.157.9:9100",
+          "bind": "60.60.0.1",
+          "duration_s": 60.5,
+          "ul_window_s": 60.0,
+          "warmup_s": 5.0,
+          "pose_hz": 250.0,
+          "frames_complete": 2569,
+          "frames_partial": 2831,
+          "dl_packets_rx_run": 308050,
+          "frames_incomplete_pct": 52.426,
+          "frames_in_stats": 2366,
+          "dl_packet_loss_pct": 1.6106,
+          "dl_throughput_mbps": 49.305,
+          "dl_continuity_pct": 99.99,
+          "ul_packets_tx": 15000,
+          "ul_pose_hz_real": 250.0,
+          "ul_throughput_mbps": 0.256,
+          "janela": {
+            "inicio_s": 5.0,
+            "nominal_s": 55.0,
+            "span_s": 54.994,
+            "frames_esperados": 4950,
+            "dl_packets_rx": 282476,
+            "dl_packets_esperados": 287100
+          },
+          "m2p_us": {
+            "min": 11254.8,
+            "p50": 17057.3,
+            "p95": 19348.0,
+            "p99": 20582.92,
+            "max": 25737.7,
+            "mean": 17099.0
+          },
+          "net_rtt_us": {
+            "min": 3079.5,
+            "p50": 6983.6,
+            "p95": 8161.224999999999,
+            "p99": 8590.714999999998,
+            "max": 10874.7,
+            "mean": 7049.9
+          },
+          "hold_us": {
+            "min": 7954.0,
+            "p50": 9991.5,
+            "p95": 11880.5,
+            "max": 19037.0,
+            "mean": 10049.1
+          },
+          "jitter_us": 1266.7,
+          "jitter_net_us": 238.4,
+          "saude": {
+            "rx_timestamp_kernel": true,
+            "sock_rcvbuf_bytes": 16777216,
+            "dl_sock_drops": 0,
+            "dl_sock_overflow_pkts": null,
+            "dl_sock_overflow_run": null,
+            "udp_rcvbuf_errors": 0,
+            "udp_in_errors": 0,
+            "ctxt_switches_involuntary": 562,
+            "clock_drift_us": 2.1
+          },
+          "_gtp": {
+            "upf": {
+              "rx_bytes": 2340759,
+              "rx_pkts": 15012,
+              "tx_bytes": 7080979872,
+              "tx_pkts": 5151635
+            },
+            "ue-tun": {
+              "rx_bytes": 378373816,
+              "rx_pkts": 308122,
+              "tx_bytes": 2340104,
+              "tx_pkts": 15002
+            }
+          },
+          "_ordem": 1,
+          "_srv": {
+            "frames_sent_total": 5401.0,
+            "frame_packets_total": 313258.0,
+            "frames_late_total": 0.0,
+            "frames_truncated_total": 0.0,
+            "send_dropped_total": 0.0,
+            "pose_packets_total": 14755.0,
+            "sessions_expired_total": 0.0,
+            "pace_window_seconds": 0.007778,
+            "sndbuf_bytes": 16777216.0
+          },
+          "_fps_servidor": 90.01666666666667,
+          "dl_packet_loss_srv_pct": 1.6625
+        }
+      },
+      "placement": {
+        "ueransim": "brix-porvir-02",
+        "upf": "petshopboys",
+        "mec-app": "brix-porvir-05",
+        "remote-app": "metallica",
+        "smf": "petshopboys",
+        "amf": "petshopboys"
+      },
+      "avisos": [
+        [
+          "geral",
+          "buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:\n         remote-app (vr_server) @ metallica: 416 kB\n       O que estourar a fila vira 'perda' no relatorio sem ser perda do UPF -- e se sobrar so' de um lado, a comparacao entre os caminhos\n       cai por diferenca de perda, nao por diferenca de caminho. Rode NO NO (sao sysctl globais; o container nem os enxerga):\n         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216\n       Para nao perder no reboot, grave em /etc/sysctl.d/99-tg2-vr.conf. Nos nos do nucleo (petshopboys, metallica), onde\n       nao ha sudo, o jeito e' baixar o perfil de carga ate' os dois lados perderem igual."
+        ]
+      ],
+      "saida": "C:\\Users\\carlo\\OneDrive\\Documentos\\UFRGS\\TG2-main\\implementacoes\\free5gc\\resultados-a-vs-b-ruido-gtp\\fundo-99\\vr-cloud\\rodada-11\\a\\vr-cloud\\run-01",
+      "segundos": 104.0,
+      "perfil": "vr-cloud",
+      "tentativas": 1
+    }
+  ],
+  "falhas": [],
+  "duracao_s": 60.0,
+  "warmup_s": 5.0,
+  "repeticoes": 1
+}

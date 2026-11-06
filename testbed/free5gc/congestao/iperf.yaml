@@ -1,0 +1,105 @@
+# Trafego de fundo para CONGESTIONAR o enlace nuvem -> borda (piloto).
+#
+# A ideia: o que prejudica o cenario centralizado numa rede real e' a
+# congestao do transporte entre o nucleo e a borda. No cenario A o trafego do
+# MEC faz trombone e desce esse enlace (UPF central -> UE e UPF central ->
+# mec-app); no cenario B, com LBO, ele nem chega ao nucleo. Congestionar o
+# enlace no sentido nuvem -> borda deve piorar o a-mec e deixar o b-mec igual.
+#
+# Nao e' emulacao: o iperf3 sai do MESMO NO da UPF de ancoragem (petshopboys) e
+# vai ate' um brix de fora do experimento, pelos mesmos fios que o trafego
+# medido. Ele nao passa por UPF nenhuma -- o que se quer congestionar e' o
+# transporte, nao o plano de usuario.
+#
+# ATENCAO na leitura: congestao so' afeta a aplicacao se o iperf e ela
+# disputarem a MESMA FILA. O switch enfileira por porta de saida, entao o
+# fundo (porta do brix-04) e a aplicacao (portas do brix-01 e do brix-02) so'
+# dividem fila ANTES do switch dos brix: na placa do petshopboys ou no enlace
+# data center -> switch. Se o gargalo for so' a porta do brix-04, a aplicacao
+# nao sente nada. E' exatamente isso que scripts/piloto-congestao.py verifica
+# antes de qualquer campanha.
+#
+# Aplicado e removido pelo piloto (--manter-iperf deixa os pods no ar).
+# Imagem netshoot: traz iperf3 (com -P multithread e saida -J), ping, pkill e
+# /proc para ler os contadores de UDP.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: congestao-iperf-servidor
+  namespace: free5gc
+  labels:
+    app: congestao-iperf-servidor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: congestao-iperf-servidor
+  template:
+    metadata:
+      labels:
+        app: congestao-iperf-servidor
+    spec:
+      # RECEPTOR na BORDA, num brix de FORA do experimento.
+      #
+      # Nao pode ser o brix-porvir-01 (Edge Node: I-UPF + mec-app) nem o
+      # brix-porvir-02 (UE/RAN + vr_client): receber ~1 Gbps de UDP custa CPU,
+      # e ai' o b-mec pioraria por disputa de processador, nao por congestao.
+      # O brix-porvir-03 fica reservado para um Edge Node 2 (ver o comentario
+      # em scenario-b-dupf/i-upf.yaml).
+      #
+      # Mesmo segmento dos brix (<edge-subnet>), atras do mesmo switch: e'
+      # isso que faz o fundo descer pelo mesmo enlace nuvem -> borda que o
+      # trafego do teste.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: brix-porvir-04
+        #nodetype: server
+      containers:
+        - name: iperf
+          image: nicolaka/netshoot:v0.13
+          imagePullPolicy: IfNotPresent
+          command: ["iperf3", "-s", "-p", "5201"]
+          ports:
+            - name: tcp-5201
+              protocol: TCP
+              containerPort: 5201
+            - name: udp-5201
+              protocol: UDP
+              containerPort: 5201
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: congestao-iperf-cliente
+  namespace: free5gc
+  labels:
+    app: congestao-iperf-cliente
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: congestao-iperf-cliente
+  template:
+    metadata:
+      labels:
+        app: congestao-iperf-cliente
+    spec:
+      # GERADOR na NUVEM, no MESMO NO da UPF de ancoragem (upf no cenario A,
+      # psa-upf no B). Sai pela mesma placa de rede que o trafego da UPF.
+      #
+      # O preco: ele disputa CPU com a UPF central, e isso prejudicaria so' o
+      # cenario A por um motivo errado. Por isso o container tambem sobe um
+      # iperf3 servidor no LOOPBACK (porta 5202): o piloto manda o fundo para o
+      # proprio pod, sem sair para a rede, e o a-mec nao pode mudar. E' o
+      # controle de CPU.
+      #
+      # Se a UPF de ancoragem mudar de no, mude aqui junto -- o piloto confere.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        #nodetype: server
+      containers:
+        - name: iperf
+          image: nicolaka/netshoot:v0.13
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "iperf3 -s -p 5202 -B 127.0.0.1 -D && exec sleep infinity"]

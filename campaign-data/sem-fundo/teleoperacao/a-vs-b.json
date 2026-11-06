@@ -1,0 +1,832 @@
+{
+  "perfil": "teleoperacao",
+  "nivel_fundo_pct": 0,
+  "rodadas": 30,
+  "pares_validos": 30,
+  "principal": [
+    {
+      "kpi": "net_p50",
+      "rotulo": "Atraso de rede p50",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        2.0760316666666667,
+        0.03618532871714471
+      ],
+      "b": [
+        1.4479483333333334,
+        0.015717338785740664
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.6280833333333333,
+        "dp": 0.03603292635367266,
+        "ic": [
+          0.6146299282501283,
+          0.6415367384165384
+        ],
+        "mde": 0.019071599675408984
+      },
+      "pct": 30.23617434472049,
+      "mediana": 0.6394499999999999,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "net_p95",
+      "rotulo": "Atraso de rede p95",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        2.545397833333333,
+        0.17020598760023478
+      ],
+      "b": [
+        1.848344,
+        0.018699513288890086
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.6970538333333334,
+        "dp": 0.17512901399413372,
+        "ic": [
+          0.63166692736961,
+          0.7624407392970567
+        ],
+        "mde": 0.09269273368647138
+      },
+      "pct": 27.133384172538662,
+      "mediana": 0.6625924999999995,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "net_p99",
+      "rotulo": "Atraso de rede p99",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        3.5423663666666654,
+        0.6836428558263291
+      ],
+      "b": [
+        2.7585179333333314,
+        0.12944752416191904
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.7838484333333325,
+        "dp": 0.7077598934281016,
+        "ic": [
+          0.5195962198307298,
+          1.0481006468359353
+        ],
+        "mde": 0.3746049716107802
+      },
+      "pct": 20.41072800293423,
+      "mediana": 0.6455795000000057,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "net_media",
+      "rotulo": "Atraso de rede (media)",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        2.045153333333334,
+        0.044312423208110754
+      ],
+      "b": [
+        1.4074066666666665,
+        0.015167227222178585
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.6377466666666667,
+        "dp": 0.04424216067970907,
+        "ic": [
+          0.6212282272943479,
+          0.6542651060389855
+        ],
+        "mde": 0.023416604274010912
+      },
+      "pct": 31.154816538785493,
+      "mediana": 0.6408500000000001,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "jitter_net",
+      "rotulo": "Jitter de rede",
+      "unidade": "us",
+      "casas": 1,
+      "a": [
+        248.48666666666665,
+        80.165826984395
+      ],
+      "b": [
+        268.07000000000005,
+        102.36607449197487
+      ],
+      "dif": {
+        "n": 30,
+        "media": -19.583333333333336,
+        "dp": 85.00923310231471,
+        "ic": [
+          -51.322738496063714,
+          12.156071829397042
+        ],
+        "mde": 44.99390492261877
+      },
+      "pct": -12.188585045815616,
+      "mediana": -14.600000000000009,
+      "b_melhor": 13
+    },
+    {
+      "kpi": "m2p_p50",
+      "rotulo": "Motion-to-photon p50",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        14.692300000000001,
+        0.056716477262815354
+      ],
+      "b": [
+        14.095713333333329,
+        0.056459917019820505
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.5965866666666667,
+        "dp": 0.08510904459142019,
+        "ic": [
+          0.5648099954661543,
+          0.6283633378671791
+        ],
+        "mde": 0.04504673340356261
+      },
+      "pct": 4.058972603481819,
+      "mediana": 0.5971749999999992,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "m2p_p95",
+      "rotulo": "Motion-to-photon p95",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        15.783267499999997,
+        0.10786992159900635
+      ],
+      "b": [
+        15.177005833333332,
+        0.059505159542787935
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.6062616666666664,
+        "dp": 0.12023171901570383,
+        "ic": [
+          0.5613714458754959,
+          0.6511518874578368
+        ],
+        "mde": 0.06363655260322884
+      },
+      "pct": 3.8370362080862725,
+      "mediana": 0.5936025,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "perda_pct",
+      "rotulo": "Perda de pacotes DL",
+      "unidade": "%",
+      "casas": 3,
+      "a": [
+        0.009470000000000001,
+        0.00904979138643157
+      ],
+      "b": [
+        0.012110000000000001,
+        0.008687023616310987
+      ],
+      "dif": {
+        "n": 30,
+        "media": -0.0026399999999999996,
+        "dp": 0.010731828266005494,
+        "ic": [
+          -0.006646880582743615,
+          0.001366880582743616
+        ],
+        "mde": 0.005680169588935815
+      },
+      "pct": -27.68328692162419,
+      "mediana": -0.0019500000000000003,
+      "b_melhor": 11
+    },
+    {
+      "kpi": "incompletos_pct",
+      "rotulo": "Quadros incompletos",
+      "unidade": "%",
+      "casas": 2,
+      "a": [
+        0.01960000000000001,
+        0.013050564791583173
+      ],
+      "b": [
+        0.02333333333333335,
+        0.010613372610104648
+      ],
+      "dif": {
+        "n": 30,
+        "media": -0.0037333333333333333,
+        "dp": 0.015997700984254244,
+        "ic": [
+          -0.009706302323658579,
+          0.0022396356569919116
+        ],
+        "mde": 0.008467304206822927
+      },
+      "pct": 14.285714285714286,
+      "mediana": 0.0,
+      "b_melhor": 3
+    },
+    {
+      "kpi": "vazao_mbps",
+      "rotulo": "Vazao DL",
+      "unidade": "Mbps",
+      "casas": 2,
+      "a": [
+        8.062966666666664,
+        0.0013514572807191744
+      ],
+      "b": [
+        8.062833333333332,
+        0.0009498941259819856
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.00013333333333361472,
+        "dp": 0.0016965143440419615,
+        "ic": [
+          -0.0005000844045387364,
+          0.0007667510712059659
+        ],
+        "mde": 0.000897935463125646
+      },
+      "pct": null,
+      "mediana": 0.0,
+      "b_melhor": null
+    }
+  ],
+  "secundaria": [
+    {
+      "kpi": "net_p50",
+      "rotulo": "Atraso de rede p50",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        1.4479483333333334,
+        0.015717338785740664
+      ],
+      "remoto": [
+        2.271446666666667,
+        0.09979533014896153
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.8234983333333333,
+        "dp": 0.10141873975251568,
+        "ic": [
+          0.7856322056831245,
+          0.8613644609835421
+        ],
+        "mde": 0.053679170688486724
+      },
+      "pct": 56.89287912809277
+    },
+    {
+      "kpi": "net_p95",
+      "rotulo": "Atraso de rede p95",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        1.848344,
+        0.018699513288890086
+      ],
+      "remoto": [
+        3.002678499999999,
+        0.13066842609385348
+      ],
+      "dif": {
+        "n": 30,
+        "media": 1.1543344999999987,
+        "dp": 0.12706996592530695,
+        "ic": [
+          1.106891122553416,
+          1.2017778774465815
+        ],
+        "mde": 0.06725591746584042
+      },
+      "pct": 62.45045617928526
+    },
+    {
+      "kpi": "net_p99",
+      "rotulo": "Atraso de rede p99",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        2.7585179333333314,
+        0.12944752416191904
+      ],
+      "remoto": [
+        4.787261433333328,
+        1.31758619337648
+      ],
+      "dif": {
+        "n": 30,
+        "media": 2.0287434999999983,
+        "dp": 1.3336662560567123,
+        "ic": [
+          1.530800251860131,
+          2.5266867481398654
+        ],
+        "mde": 0.7058862965073229
+      },
+      "pct": 74.06552618691332
+    },
+    {
+      "kpi": "net_media",
+      "rotulo": "Atraso de rede (media)",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        1.4074066666666665,
+        0.015167227222178585
+      ],
+      "remoto": [
+        2.2796199999999995,
+        0.10489404309045422
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.8722133333333333,
+        "dp": 0.1053286440830215,
+        "ic": [
+          0.8328873873414617,
+          0.9115392793252048
+        ],
+        "mde": 0.055748614880408554
+      },
+      "pct": 61.98763265206876
+    },
+    {
+      "kpi": "jitter_net",
+      "rotulo": "Jitter de rede",
+      "unidade": "us",
+      "casas": 1,
+      "mec": [
+        268.07000000000005,
+        102.36607449197487
+      ],
+      "remoto": [
+        420.9666666666665,
+        164.31466938381564
+      ],
+      "dif": {
+        "n": 30,
+        "media": 152.89666666666668,
+        "dp": 160.23302531718875,
+        "ic": [
+          93.07138974796676,
+          212.7219435853666
+        ],
+        "mde": 84.80854659526213
+      },
+      "pct": 71.0956883379704
+    },
+    {
+      "kpi": "m2p_p50",
+      "rotulo": "Motion-to-photon p50",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        14.095713333333329,
+        0.056459917019820505
+      ],
+      "remoto": [
+        14.88831,
+        0.10841559596421506
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.7925966666666665,
+        "dp": 0.12522831833352913,
+        "ic": [
+          0.7458408945183463,
+          0.8393524388149867
+        ],
+        "mde": 0.0662811655051247
+      },
+      "pct": 5.624776926735742
+    },
+    {
+      "kpi": "m2p_p95",
+      "rotulo": "Motion-to-photon p95",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        15.177005833333332,
+        0.059505159542787935
+      ],
+      "remoto": [
+        16.149037833333335,
+        0.15986647526911718
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.9720319999999995,
+        "dp": 0.17873617029982572,
+        "ic": [
+          0.905298310971737,
+          1.038765689028262
+        ],
+        "mde": 0.09460193862735104
+      },
+      "pct": 6.406820982795752
+    },
+    {
+      "kpi": "perda_pct",
+      "rotulo": "Perda de pacotes DL",
+      "unidade": "%",
+      "casas": 3,
+      "mec": [
+        0.012110000000000001,
+        0.008687023616310987
+      ],
+      "remoto": [
+        0.013560000000000004,
+        0.009379934563406777
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.0014499999999999997,
+        "dp": 0.012080841201585717,
+        "ic": [
+          -0.0030605537317604037,
+          0.0059605537317604035
+        ],
+        "mde": 0.00639417861534152
+      },
+      "pct": 56.25803700332176
+    },
+    {
+      "kpi": "incompletos_pct",
+      "rotulo": "Quadros incompletos",
+      "unidade": "%",
+      "casas": 2,
+      "mec": [
+        0.02333333333333335,
+        0.010613372610104648
+      ],
+      "remoto": [
+        0.02333333333333335,
+        0.010613372610104648
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.0,
+        "dp": 0.014706320480288927,
+        "ic": [
+          -0.005490813728610619,
+          0.005490813728610619
+        ],
+        "mde": 0.00778379902163432
+      },
+      "pct": -16.0
+    },
+    {
+      "kpi": "vazao_mbps",
+      "rotulo": "Vazao DL",
+      "unidade": "Mbps",
+      "casas": 2,
+      "mec": [
+        8.062833333333332,
+        0.0009498941259819856
+      ],
+      "remoto": [
+        8.0619,
+        0.0015165750888103905
+      ],
+      "dif": {
+        "n": 30,
+        "media": -0.0009333333333334674,
+        "dp": 0.001617433755683094,
+        "ic": [
+          -0.00153722520980429,
+          -0.000329441456862645
+        ],
+        "mde": 0.0008560794864982466
+      },
+      "pct": null
+    }
+  ],
+  "por_rodada": [
+    {
+      "rodada": 1,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 2,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 3,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 4,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 5,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 6,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 7,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 8,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 9,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 10,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 11,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 12,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 13,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 14,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 15,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 16,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 17,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 18,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 19,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 20,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 21,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 22,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 23,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 24,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 25,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 26,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 27,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 28,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 29,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 30,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    }
+  ]
+}

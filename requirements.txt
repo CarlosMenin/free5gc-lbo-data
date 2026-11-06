@@ -1,0 +1,4 @@
+# Analysis only (the testbed scripts have their own requirements in testbed/free5gc/scripts/).
+# Tested with Python 3.9.6, numpy 2.0.2 and matplotlib 3.9.4.
+numpy>=1.24
+matplotlib>=3.7

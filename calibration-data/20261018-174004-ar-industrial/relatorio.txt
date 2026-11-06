@@ -1,0 +1,30 @@
+CALIBRACAO DO INSTRUMENTO -- perfil ar-industrial, 5 repeticoes de 60s (warmup 5s)
+placement: {"ueransim": "brix-porvir-02", "i-upf": "brix-porvir-05", "mec-app": "brix-porvir-05", "psa-upf": "petshopboys", "remote-app": "metallica", "smf": "petshopboys", "amf": "petshopboys"}
+
+1. ESCADA DE CONTROLE  (net_rtt em us; mediana entre repeticoes [min-max])
+   degrau      validas  net min               net p50  desvio  net p99  jitter  perda %   Mbps
+   C0-tester     5/5         25         122 [109-125]       8      199      37    0.005  12.10
+   C0-borda      5/5         22            35 [35-36]       1       61       5    0.011  12.09
+   C0-nucleo     5/5         16            25 [25-26]       1       50       5    0.003  12.09
+   C1-borda      5/5        207         470 [468-503]      15      624      64    0.016  12.09
+   C1-nucleo     5/5        315         572 [560-582]       8      955      66    0.015  12.09
+   C2-borda      5/5        499      1498 [1478-1560]      37     2974     236    0.019  12.09
+   C2-nucleo     5/5       1024      2201 [2175-2253]      37     4902     351    0.024  12.09
+
+2. DECOMPOSICAO DO net_rtt p50  (us)
+   piso do instrumento (maior C0): 122   por maquina: C0-tester=122, C0-borda=35, C0-nucleo=25
+   caminho    C1 rede s/ 5G     C2 5G   rede - piso   5G (C2-C1)
+   borda                470      1498           348         1028
+   nucleo               572      2201           449         1629
+
+3. RUIDO x EFEITO
+   aplicacao fora (2 UPFs) no net_rtt p50 (C2-nucleo - C2-borda): 703 us
+   (nao e' o ganho do LBO: este sai de a-mec x b-mec, em campanha-a-vs-b.py)
+   desvio entre repeticoes: borda 37 us, nucleo 37 us
+   menor diferenca detectavel (alfa 5%, poder 80%, t de Student, gl de Welch = 8.0): 76 us -> efeito = 9.3x essa diferenca
+   ruido do proprio instrumento (desvio do p50 em C0-tester): 8 us
+
+4. VALIDACOES DE EXATIDAO
+   V1 sleep no servidor -> net_rtt parado OK
+   V2 netem -> net_rtt 1:1            OK
+   V3 ping simultaneo (testemunha)    OK

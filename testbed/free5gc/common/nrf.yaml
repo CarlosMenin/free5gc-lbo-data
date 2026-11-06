@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nrf-config
+  namespace: free5gc
+data:
+  nrfConfig.yaml: |
+    info:
+      version: 1.0.2
+      description: NRF initial local configuration
+
+    configuration:
+      MongoDBName: free5gc
+      MongoDBUrl: mongodb://mongo:27017
+      sbi:
+        scheme: http
+        registerIPv4: nrf.free5gc.svc.cluster.local
+        bindingIPv4: 0.0.0.0
+        port: 8000
+        cert:
+          pem: cert/nrf.pem
+          key: cert/nrf.key
+        rootcert:
+          pem: cert/root.pem
+          key: cert/root.key
+        # OAuth2 entre NFs: NOVIDADE da v4.x (o free5gc-compose ja vem com oauth: true).
+        # Mantido DESLIGADO neste testbed por dois motivos:
+        #   1) exige distribuir certificados (cert/nrf.pem) para todos os NFs;
+        #   2) adiciona validacao de token no caminho de sinalizacao, o que seria
+        #      um fator de confusao nas medicoes de latencia de session setup.
+        # Para ligar: oauth: true aqui + nrfCertPem em cada NF + Secret com os certs.
+        oauth: false
+      DefaultPlmnId:
+        mcc: 208
+        mnc: 93
+      serviceNameList:
+        - nnrf-nfm
+        - nnrf-disc
+
+      # Metricas Prometheus nativas (NOVIDADE da v4.x).
+      metrics:
+        enable: true
+        scheme: http
+        bindingIPv4: 0.0.0.0
+        port: 9091
+        namespace: free5gc
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-nrf
+  namespace: free5gc
+  labels:
+    epc-mode: nrf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: nrf
+  template:
+    metadata:
+      labels:
+        epc-mode: nrf
+        app: free5gc-nrf
+        version: v4.2.3
+        prometheus: free5gc-monitor
+    spec:
+      hostname: nrf-pod
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        nodetype: server
+      containers:
+        - name: nrf
+          image: free5gc/nrf:v4.2.3
+          imagePullPolicy: IfNotPresent
+          command: ["./nrf", "-c", "/configuracoes/nrfConfig.yaml"]
+          env:
+            - name: GIN_MODE
+              value: release
+          ports:
+            - name: http2-8000
+              protocol: TCP
+              containerPort: 8000
+            - name: metrics-9091
+              protocol: TCP
+              containerPort: 9091
+          volumeMounts:
+            - name: config-volume
+              mountPath: /configuracoes
+      volumes:
+        - name: config-volume
+          configMap:
+            name: nrf-config
+            defaultMode: 0777
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nrf
+  namespace: free5gc
+  labels:
+    app: free5gc-nrf
+spec:
+  selector:
+    epc-mode: nrf
+    app: free5gc-nrf
+  ports:
+    - name: http2-8000
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: metrics-9091
+      protocol: TCP
+      port: 9091
+      targetPort: 9091
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-nrf
+  namespace: free5gc
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: free5gc-nrf
+  endpoints:
+    - interval: 15s
+      port: metrics-9091
+      path: /metrics
+---

@@ -1,0 +1,364 @@
+# CENARIO B: SMF com ULCL habilitado.
+#
+# Topologia:   gNB1 --N3--> I-UPF (borda) --N9--> PSA-UPF (nucleo) --N6--> internet
+#                              |
+#                              +--N6--> servico MEC (LOCAL BREAKOUT)
+#
+# Fatia 1/112233 (so' o UE de ruido, congestao/ruido-gtp.yaml):
+#              gNB  --N3--> PSA-UPF (nucleo) --N6--> internet
+#
+# O ULCL do free5gc so se aplica a UEs listados explicitamente em
+# ueRouting.yaml (ueRoutingInfo.<grupo>.members). UEs fora da lista caem no
+# caminho default derivado de "links".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smf-config
+  namespace: free5gc
+data:
+  smfConfig.yaml: |
+    info:
+      version: 1.0.7
+      description: SMF - cenario B (dUPF com ULCL / Local Breakout)
+
+    configuration:
+      smfName: SMF
+      sbi:
+        scheme: http
+        registerIPv4: smf.free5gc.svc.cluster.local
+        bindingIPv4: 0.0.0.0
+        port: 8000
+        tls:
+          key: cert/smf.key
+          pem: cert/smf.pem
+      serviceNameList:
+        - nsmf-pdusession
+        - nsmf-event-exposure
+        - nsmf-oam
+        - nsmf-callback
+      snssaiInfos:
+        - sNssai:
+            sst: 1
+            sd: 010203
+          dnnInfos:
+            - dnn: internet
+              dnaiList:
+                - mec          # DNAI que identifica o dominio MEC de borda
+              dns:
+                ipv4: 10.96.0.10
+                ipv6: 2001:4860:4860::8888
+        - sNssai:
+            sst: 1
+            sd: 112233
+          dnnInfos:
+            - dnn: internet
+              # Sem dnaiList: esta fatia nao tem breakout (ver o I-UPF abaixo).
+              dns:
+                ipv4: 10.96.0.10
+                ipv6: 2001:4860:4860::8888
+      plmnList:
+        - mcc: 208
+          mnc: 93
+      locality: area1
+      pfcp:
+        nodeID: smf.free5gc.svc.cluster.local
+        listenAddr: 0.0.0.0
+        externalAddr: smf.free5gc.svc.cluster.local
+        heartbeatInterval: 5s
+      userplaneInformation:
+        upNodes:
+          gNB1:
+            type: AN
+          I-UPF:
+            type: UPF
+            nodeID: i-upf.free5gc.svc.cluster.local
+            addr: i-upf.free5gc.svc.cluster.local
+            # SEM "pools": o branching point nao aloca IP de UE.
+            # O IP vem do PSA-UPF (anchor do caminho default).
+            #
+            # So' a fatia 010203 (a do experimento). A 112233 ficou SO' no
+            # PSA-UPF de proposito: e' a fatia do UE de ruido
+            # (congestao/ruido-gtp.yaml), trafego de outra celula que desce do
+            # nucleo pelo backhaul sem passar pelo Edge Node. A busca de caminho
+            # do SMF (getPathBetween) pula UPF que nao atende a fatia, entao,
+            # com o link gNB1 -> PSA-UPF la' embaixo, o caminho do ruido vira
+            # gNB -> PSA-UPF direto.
+            #
+            # Por que fatia, e nao um grupo proprio no ueRouting: o grupo so'
+            # vale enquanto o PCF nao manda a PCC rule default (precedencia
+            # 255, sem DNAI). Ele manda quando o assinante tem chargingData --
+            # o webconsole grava, o insere-dados.py nao -- e com ela o SMF
+            # monta o caminho default pelos 'links' globais
+            # (CreatePccRuleDataPath), passando pelo I-UPF e ignorando a
+            # topologia do grupo. E na 010203 o Traffic Influence do mec-af
+            # (anyUeInd) ainda daria ao ruido uma regra de breakout no I-UPF.
+            # A fatia resolve nos dois casos.
+            sNssaiUpfInfos:
+              - sNssai:
+                  sst: 1
+                  sd: 010203
+                dnnUpfInfoList:
+                  - dnn: internet
+                    dnaiList:
+                      - mec
+            interfaces:
+              - interfaceType: N3
+                endpoints:
+                  - i-upf.free5gc.svc.cluster.local
+                networkInstances:
+                  - internet
+              - interfaceType: N9
+                endpoints:
+                  - i-upf.free5gc.svc.cluster.local
+                networkInstances:
+                  - internet
+          PSA-UPF:
+            type: UPF
+            nodeID: psa-upf.free5gc.svc.cluster.local
+            addr: psa-upf.free5gc.svc.cluster.local
+            # O SMF valida sobreposicao de pools GLOBALMENTE (isOverlap sobre
+            # allUEIPPools em internal/context/user_plane_information.go): ele
+            # NAO separa por S-NSSAI. Declarar 60.60.0.0/16 nas duas slices
+            # aborta o boot com "overlap cidr value between UPFs". Por isso o
+            # /16 e' partido em dois /17 disjuntos - ambos continuam dentro do
+            # cidr 60.60.0.0/16 do upfcfg, entao a rota/NAT do UPF nao muda.
+            sNssaiUpfInfos:
+              - sNssai:
+                  sst: 1
+                  sd: 010203
+                dnnUpfInfoList:
+                  - dnn: internet
+                    pools:
+                      - cidr: 60.60.0.0/17
+              - sNssai:
+                  sst: 1
+                  sd: 112233
+                dnnUpfInfoList:
+                  - dnn: internet
+                    pools:
+                      - cidr: 60.60.128.0/17
+            interfaces:
+              - interfaceType: N9
+                endpoints:
+                  - psa-upf.free5gc.svc.cluster.local
+                networkInstances:
+                  - internet
+              # N3 so' para o UE de ruido (fatia 112233), cujo caminho comeca
+              # no PSA-UPF: o SMF entrega ao gNB o F-TEID da interface N3 do
+              # PRIMEIRO UPF do caminho (ngap_build.go usa N3Interfaces[0]) e,
+              # sem ela, a sessao nao fecha. Nao mexe no caminho do experimento:
+              # UPF que nao e' o primeiro do caminho e' alcancado pela N9
+              # (datapath.go), e na fatia 010203 o primeiro e' sempre o I-UPF.
+              # Do lado do go-upf nada muda: o ifList so' fornece o endereco
+              # (0.0.0.0:2152 atende N3 e N9 igual).
+              - interfaceType: N3
+                endpoints:
+                  - psa-upf.free5gc.svc.cluster.local
+                networkInstances:
+                  - internet
+        links:
+          - A: gNB1
+            B: I-UPF
+          - A: I-UPF
+            B: PSA-UPF
+          # Caminho da fatia 112233 (ruido). A ORDEM IMPORTA: o SMF percorre os
+          # vizinhos do gNB1 na ordem desta lista (busca em profundidade), e
+          # com este link em PRIMEIRO a fatia 010203 passaria a ancorar
+          # gNB1 -> PSA-UPF direto, sem o I-UPF -- fim do LBO. Aqui, por
+          # ultimo, a 010203 continua achando o I-UPF antes, e a 112233 chega
+          # nele porque o I-UPF nao atende a fatia e e' pulado.
+          - A: gNB1
+            B: PSA-UPF
+      t3591:
+        enable: true
+        expireTime: 16s
+        maxRetryTimes: 3
+      t3592:
+        enable: true
+        expireTime: 16s
+        maxRetryTimes: 3
+      nrfUri: http://nrf.free5gc.svc.cluster.local:8000
+      # URR (Usage Reporting Rules) -- o que o UPF reporta ao SMF para charging.
+      #
+      # Os valores de exemplo do free5gc (urrThreshold: 1000, em BYTES) fazem o
+      # UPF mandar um Usage Report PFCP a cada 1000 bytes trafegados. Numa demo
+      # de ping isso e' inocente; sob a carga VR e' fatal:
+      #
+      #     6 Mbps  ->    ~750 relatorios/s
+      #    50 Mbps  ->   ~6250 relatorios/s
+      #
+      # Medido em 08/09/2026: 27.814 USA Reports num unico I-UPF. O SMF nao
+      # sustenta esse volume de transacoes PFCP, os numeros de sequencia
+      # colidem ("Sequence number 99911 already exist!"), a associacao com o
+      # UPF CAI ("UPF[...] not associated with SMF"), o plano de dados morre e
+      # sessoes PDU novas passam a falhar. O SMF chega a entrar em panic no
+      # handler HTTP. Era esta a causa do caminho remoto "parar sozinho" no
+      # meio das campanhas.
+      #
+      # E nada disso serve para coisa alguma aqui: nao ha CHF no testbed
+      # ("chf selection error: no CHF found in CHFSelection"), entao o relatorio
+      # e' produzido, transportado e descartado. Os limiares abaixo mantem o URR
+      # existindo (o free5gc precisa da URR para montar a sessao) sem que ele
+      # dispare durante uma campanha.
+      urrPeriod: 3600
+      urrThreshold: 1000000000
+      requestedUnit: 1000000000
+
+      # Chave do cenario: habilita o Uplink Classifier.
+      # Sem isto o arquivo ueRouting.yaml e' inteiramente IGNORADO
+      # (ver InitSMFUERouting em internal/context/context.go).
+      ulcl: true
+
+      metrics:
+        enable: true
+        scheme: http
+        bindingIPv4: 0.0.0.0
+        port: 9091
+        namespace: free5gc
+
+    logger:
+      enable: true
+      level: info
+      reportCaller: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ue-routing-info
+  namespace: free5gc
+data:
+  ueRouting.yaml: |
+    info:
+      version: 1.0.7
+      description: Roteamento de UE - LBO via ULCL para o servico MEC
+
+    ueRoutingInfo:
+      UE1:
+        # Apenas estes IMSIs recebem tratamento ULCL.
+        # Para escalar o numero de UEs use: python3 scripts/gen-uerouting.py -n 50
+        members:
+          - imsi-208930000000000
+          - imsi-208930000000001
+          - imsi-208930000000002
+          - imsi-208930000000003
+          - imsi-208930000000004
+        # Caminho default do grupo: sobe ate o anchor central.
+        # O SMF faz BFS a partir do no AN; folhas viram Anchor UPF.
+        topology:
+          - A: gNB1
+            B: I-UPF
+          - A: I-UPF
+            B: PSA-UPF
+        # LOCAL BREAKOUT: NAO e' mais declarado aqui. A regra chega em runtime
+        # por Traffic Influence (mec-af -> NEF -> UDR -> PCF -> SMF): o SMF
+        # seleciona o I-UPF pelo DNAI "mec" (dnaiList acima) e instala o PDR
+        # com o ClusterIP que o k8s alocou ao servico -- em sessoes abertas e
+        # novas, sem restart. Deste arquivo continuam valendo 'ulcl: true',
+        # os 'members' e a 'topology' (caminho default ate' o PSA-UPF).
+        #
+        # Fallback estatico, para depurar sem o NEF: descomente, troque o dest
+        # pelo ClusterIP atual (kubectl -n free5gc get svc mec-app) e reinicie
+        # o SMF. "dest" precisa ser CIDR (govalidator 'cidr').
+        # specificPath:
+        #   - dest: 10.96.100.100/32
+        #     path: [I-UPF]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-smf
+  namespace: free5gc
+  labels:
+    epc-mode: smf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: smf
+  template:
+    metadata:
+      labels:
+        epc-mode: smf
+        app: free5gc-smf
+        version: v4.2.3
+        prometheus: free5gc-monitor
+    spec:
+      hostname: smf-pod
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: petshopboys
+        nodetype: server
+      containers:
+        - name: smf
+          image: free5gc/smf:v4.2.3
+          imagePullPolicy: IfNotPresent
+          # O -u e' obrigatorio no cenario ULCL.
+          command: ["./smf", "-c", "/configuracoes/smfConfig.yaml", "-u", "/free5gc/ue/ueRouting.yaml"]
+          env:
+            - name: GIN_MODE
+              value: release
+          ports:
+            - name: http2-8000
+              protocol: TCP
+              containerPort: 8000
+            - name: udp-8805
+              protocol: UDP
+              containerPort: 8805
+            - name: metrics-9091
+              protocol: TCP
+              containerPort: 9091
+          volumeMounts:
+            - name: config-volume
+              mountPath: /configuracoes
+            - name: config-uerouting
+              mountPath: /free5gc/ue
+      volumes:
+        - name: config-volume
+          configMap:
+            name: smf-config
+            defaultMode: 0777
+        - name: config-uerouting
+          configMap:
+            name: ue-routing-info
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smf
+  namespace: free5gc
+  labels:
+    app: free5gc-smf
+spec:
+  selector:
+    epc-mode: smf
+    app: free5gc-smf
+  ports:
+    - name: http2-8000
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: udp-8805
+      protocol: UDP
+      port: 8805
+      targetPort: 8805
+    - name: metrics-9091
+      protocol: TCP
+      port: 9091
+      targetPort: 9091
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-smf
+  namespace: free5gc
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: free5gc-smf
+  endpoints:
+    - interval: 15s
+      port: metrics-9091
+      path: /metrics
+---

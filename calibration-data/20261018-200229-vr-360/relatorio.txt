@@ -1,0 +1,30 @@
+CALIBRACAO DO INSTRUMENTO -- perfil vr-360, 5 repeticoes de 60s (warmup 5s)
+placement: {"ueransim": "brix-porvir-02", "i-upf": "brix-porvir-05", "mec-app": "brix-porvir-05", "psa-upf": "petshopboys", "remote-app": "metallica", "smf": "petshopboys", "amf": "petshopboys"}
+
+1. ESCADA DE CONTROLE  (net_rtt em us; mediana entre repeticoes [min-max])
+   degrau      validas  net min               net p50  desvio  net p99  jitter  perda %   Mbps
+   C0-tester     5/5         17            78 [64-87]       9      137      20    0.007  25.34
+   C0-borda      5/5         16            22 [21-23]       1       39       3    0.012  25.34
+   C0-nucleo     5/5         14            23 [21-25]       2       43       4    0.009  25.33
+   C1-borda      5/5        191         478 [474-494]       9      624      65    0.012  25.34
+   C1-nucleo     5/5        292         592 [566-608]      17     1056      87    0.014  25.33
+   C2-borda      5/5        466      1516 [1471-1714]      96     3201     297    0.017  25.34
+   C2-nucleo     5/5       1142      2219 [2114-2421]     136     6275     504    0.009  25.34
+
+2. DECOMPOSICAO DO net_rtt p50  (us)
+   piso do instrumento (maior C0): 78   por maquina: C0-tester=78, C0-borda=22, C0-nucleo=23
+   caminho    C1 rede s/ 5G     C2 5G   rede - piso   5G (C2-C1)
+   borda                478      1516           400         1038
+   nucleo               592      2219           514         1627
+
+3. RUIDO x EFEITO
+   aplicacao fora (2 UPFs) no net_rtt p50 (C2-nucleo - C2-borda): 703 us
+   (nao e' o ganho do LBO: este sai de a-mec x b-mec, em campanha-a-vs-b.py)
+   desvio entre repeticoes: borda 96 us, nucleo 136 us
+   menor diferenca detectavel (alfa 5%, poder 80%, t de Student, gl de Welch = 7.2): 243 us -> efeito = 2.9x essa diferenca
+   ruido do proprio instrumento (desvio do p50 em C0-tester): 9 us
+
+4. VALIDACOES DE EXATIDAO
+   V1 sleep no servidor -> net_rtt parado OK
+   V2 netem -> net_rtt 1:1            OK
+   V3 ping simultaneo (testemunha)    OK

@@ -1,0 +1,328 @@
+# Servico MEC de BORDA (alvo do Local Breakout) e seu contraponto remoto.
+#
+# Cada pod roda dois geradores de carga:
+#
+#   iperf      (5001)  saturacao bruta -- teto de vazao, sem loop fechado.
+#   vr-server  (9100)  aplicacao VR do TG1: downlink pesado de "frames"
+#                      fechado em loop com o uplink de pose/controle.
+#                      Metricas Prometheus em 9101. Codigo em
+#                      implementacoes/mec-vr/, montado via ConfigMap vr-app.
+#
+# Os dois convivem porque medem coisas diferentes: o iperf responde "quanto
+# cabe", o vr-server responde "quanto demora o loop fechado" -- que e' a
+# pergunta do TG1. Rode um de cada vez nas campanhas.
+#
+# O ClusterIP NAO e' fixo: o mec-af (mec/mec-af.yaml) resolve este Service pelo
+# nome DNS e anuncia ao NEF o IP que o k8s alocou; o core leva a regra ate' o
+# I-UPF por Traffic Influence (NEF -> UDR -> PCF -> SMF). Trocar o IP ou
+# recriar o Service nao exige mexer em config nenhum do core nem reiniciar o
+# SMF. Para anunciar OUTRO servico, acrescente o nome dele em SERVICES no
+# mec-af.yaml.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mec-app
+  namespace: free5gc
+  labels:
+    app: free5gc-mec-app
+spec:
+  selector:
+    epc-mode: mec-app
+  ports:
+    - name: tcp-5001
+      protocol: TCP
+      port: 5001
+      targetPort: 5001
+    - name: udp-5001
+      protocol: UDP
+      port: 5001
+      targetPort: 5001
+    - name: udp-9100
+      protocol: UDP
+      port: 9100
+      targetPort: 9100
+    - name: metrics-9101
+      protocol: TCP
+      port: 9101
+      targetPort: 9101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-mec-app
+  namespace: free5gc
+  labels:
+    epc-mode: mec-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: mec-app
+  template:
+    metadata:
+      labels:
+        epc-mode: mec-app
+        app: free5gc-mec-app
+        prometheus: free5gc-monitor
+    spec:
+      # MEC DOMAIN do EDGE NODE 1 (Figura 3 do TG1).
+      #
+      # O TG1 desenha o Edge Node como UM no, com dUPF + LBO + MEC domain
+      # (AI-on-RAN + Edge Applications) dentro. Por isso este pod fica no MESMO
+      # no do I-UPF -- brix-porvir-01. Separar o MEC do dUPF que faz o breakout
+      # seria uma topologia diferente da proposta.
+      #
+      # Consequencia direta: sob LBO o pacote sai do dUPF e chega aqui SEM
+      # tocar um fio. E' isso que a Figura 2 quer dizer com "traffic remains
+      # within the local edge environment".
+      #
+      # O tester (UERANSIM) NAO esta aqui, e de proposito: o assinante nao mora
+      # dentro do host MEC. Ele fica em brix-porvir-02, no mesmo switch mas fora
+      # do Edge Node -- ver o comentario em tester/ueransim.yaml. Isso tambem
+      # libera os 2 nucleos fisicos deste brix para o gtp5g e para o vr-server,
+      # que foi o gargalo medido no perfil de 100 Mbps em 08/09/2026 (o servidor
+      # sustentou 53 dos 90 fps quando dividia o no com o gNB e o UE).
+      #
+      # O brix tambem e' o unico no com sudo, e o vr-server depende disso:
+      # net.core.rmem_max/wmem_max sao sysctl GLOBAIS do no, nao existem por
+      # namespace de rede, e sem levanta-los o pedido de 8 MB de buffer e'
+      # cortado em silencio (ver o bloco PACING abaixo).
+      nodeSelector:
+        #kubernetes.io/arch: amd64
+        kubernetes.io/hostname: brix-porvir-01
+        #nodetype: server
+      volumes:
+        - name: vr-app
+          configMap:
+            name: vr-app
+      containers:
+        - name: iperf
+          image: mlabbe/iperf:latest
+          ports:
+            - name: tcp-5001
+              protocol: TCP
+              containerPort: 5001
+            - name: udp-5001
+              protocol: UDP
+              containerPort: 5001
+          command: ["iperf", "-s", "-p", "5001"]
+        - name: vr-server
+          image: python:3.12-slim
+          command: ["python3", "-u", "/opt/vr/vr_server.py"]
+          ports:
+            - name: udp-9100
+              protocol: UDP
+              containerPort: 9100
+            - name: metrics-9101
+              protocol: TCP
+              containerPort: 9101
+          env:
+            # PACING (VR_SPREAD): ligado por padrao desde a mudanca no
+            # vr_server. O frame sai em rajadas pequenas espalhadas pelo
+            # periodo, em vez de todos os pacotes de uma vez. Um frame de
+            # 50 Mbps a 60 fps sao 87 pacotes (~104 kB) que, em rajada, saem na
+            # velocidade do veth -- nenhuma fila do caminho (socket do cliente,
+            # nr-gnb, nr-ue) absorve isso, e o que estoura vira "perda" que na
+            # verdade e' burst. E' o que trava as cargas mais pesadas.
+            #   VR_PACE_DUTY  fracao do periodo usada para espalhar (0.8)
+            #   VR_SPREAD=0   volta ao comportamento antigo (rajada unica)
+            # O custo do pacing entra no hold e, por consequencia, no m2p --
+            # IGUAL nos dois caminhos, e o net_rtt (que desconta o hold) nao
+            # muda. O relatorio traz o hold em coluna propria por isso.
+            #
+            # ANTES DE SUBIR A CARGA, confira no NO (nao no pod: sao sysctl
+            # globais, nao existem por namespace de rede):
+            #   sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216
+            # Sem isso o pedido de 8 MB de SO_RCVBUF/SO_SNDBUF e' cortado em
+            # ~416 kB em silencio, e a perda resultante entra no relatorio como
+            # se fosse do caminho do UPF.
+            - name: VR_ROLE
+              value: "mec"
+            - name: VR_PROFILE
+              value: "heavy"
+            - name: VR_BITRATE_MBPS
+              value: "50"
+            - name: VR_FPS
+              value: "90"
+            - name: VR_MTU
+              value: "1200"
+            - name: VR_RENDER_MS
+              value: "0"
+            # - name: VR_AI_URL
+            #   value: "http://jetson-ai.free5gc.svc.cluster.local:8080/infer"
+          volumeMounts:
+            - name: vr-app
+              mountPath: /opt/vr
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9101
+            initialDelaySeconds: 3
+            periodSeconds: 10
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-mec-app
+  namespace: free5gc
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: free5gc-mec-app
+  endpoints:
+    - interval: 15s
+      port: metrics-9101
+      path: /metrics
+---
+# Servico REMOTO (data network central), representando a nuvem/servico distante.
+# Serve de contraponto: no cenario B, o trafego para ca continua subindo
+# ate o PSA-UPF central, enquanto o trafego para o mec-app sai na borda.
+#
+# Sem ClusterIP fixo e FORA de SERVICES no mec-af: se ele fosse anunciado,
+# tambem sairia pela borda e o contraste da medicao sumiria. Os scripts de
+# campanha descobrem o IP com 'kubectl get svc remote-app'.
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-app
+  namespace: free5gc
+  labels:
+    app: free5gc-remote-app
+spec:
+  selector:
+    epc-mode: remote-app
+  ports:
+    - name: tcp-5001
+      protocol: TCP
+      port: 5001
+      targetPort: 5001
+    - name: udp-5001
+      protocol: UDP
+      port: 5001
+      targetPort: 5001
+    - name: udp-9100
+      protocol: UDP
+      port: 9100
+      targetPort: 9100
+    - name: metrics-9101
+      protocol: TCP
+      port: 9101
+      targetPort: 9101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gc-remote-app
+  namespace: free5gc
+  labels:
+    epc-mode: remote-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      epc-mode: remote-app
+  template:
+    metadata:
+      labels:
+        epc-mode: remote-app
+        app: free5gc-remote-app
+        prometheus: free5gc-monitor
+    spec:
+      # NUCLEO (<core-subnet>, do outro lado do roteador). Contraponto do
+      # mec-app: mesma imagem, mesmo perfil, mesma configuracao -- a UNICA
+      # diferenca entre os dois caminhos tem que ser onde o trafego sai do
+      # user plane.
+      #
+      # SERVICO REMOTO, do outro lado do Backhaul/Transport Network.
+      #
+      # Nao aparece como caixa na Figura 3 do TG1 -- as duas figuras so'
+      # desenham o MEC domain como destino. Ele vem do texto da Secao 4.1:
+      # "non-local traffic can still traverse the transport network towards
+      # remote services". E' o que prova que o ULCL esta CLASSIFICANDO, e nao
+      # mandando tudo para a borda: o mesmo UE, na mesma sessao PDU, com dois
+      # destinos que tomam caminhos diferentes.
+      #
+      # metallica e NAO petshopboys: petshopboys e' o Server Node (5G Core), e
+      # o servico remoto nao faz parte do core -- ele e' alcancado ATRAVES do
+      # core. Po-lo no mesmo no da ancora ainda daria ao caminho remoto um hop
+      # N6 de graca que o caminho de borda paga.
+      #
+      # ATENCAO na leitura do resultado: aqui NAO ha sudo para levantar
+      # net.core.rmem_max/wmem_max. O no concede ~416 kB contra os 8 MB
+      # pedidos, e e' do lado remoto que os estouros de fila do UDP aparecem
+      # primeiro quando a carga sobe. Perda muito diferente entre os dois
+      # caminhos invalida a comparacao (a guarda de saude do passo 12 barra a
+      # execucao) -- nao e' resultado do LBO, e' o buffer.
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/hostname: metallica
+        #nodetype: server
+      volumes:
+        - name: vr-app
+          configMap:
+            name: vr-app
+      containers:
+        - name: iperf
+          image: mlabbe/iperf:latest
+          ports:
+            - name: tcp-5001
+              protocol: TCP
+              containerPort: 5001
+            - name: udp-5001
+              protocol: UDP
+              containerPort: 5001
+          command: ["iperf", "-s", "-p", "5001"]
+        - name: vr-server
+          image: python:3.12-slim
+          command: ["python3", "-u", "/opt/vr/vr_server.py"]
+          ports:
+            - name: udp-9100
+              protocol: UDP
+              containerPort: 9100
+            - name: metrics-9101
+              protocol: TCP
+              containerPort: 9101
+          env:
+            # MESMO perfil do mec-app -- a unica diferenca entre os dois
+            # caminhos tem que ser o lugar onde o trafego sai do user plane.
+            - name: VR_ROLE
+              value: "remote"
+            - name: VR_PROFILE
+              value: "heavy"
+            - name: VR_BITRATE_MBPS
+              value: "50"
+            - name: VR_FPS
+              value: "90"
+            - name: VR_MTU
+              value: "1200"
+            - name: VR_RENDER_MS
+              value: "0"
+          volumeMounts:
+            - name: vr-app
+              mountPath: /opt/vr
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9101
+            initialDelaySeconds: 3
+            periodSeconds: 10
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: free5gc-remote-app
+  namespace: free5gc
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: free5gc-remote-app
+  endpoints:
+    - interval: 15s
+      port: metrics-9101
+      path: /metrics

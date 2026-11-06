@@ -1,0 +1,832 @@
+{
+  "perfil": "vr-360",
+  "nivel_fundo_pct": 0,
+  "rodadas": 30,
+  "pares_validos": 30,
+  "principal": [
+    {
+      "kpi": "net_p50",
+      "rotulo": "Atraso de rede p50",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        2.1022733333333337,
+        0.10807314551547573
+      ],
+      "b": [
+        1.5823549999999997,
+        0.1109525670244287
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.5199183333333334,
+        "dp": 0.12704251629042262,
+        "ic": [
+          0.4724852045979948,
+          0.5673514620686719
+        ],
+        "mde": 0.06724138885268778
+      },
+      "pct": 24.627901771484268,
+      "mediana": 0.5275749999999998,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "net_p95",
+      "rotulo": "Atraso de rede p95",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        5.390510166666666,
+        5.999464417457652
+      ],
+      "b": [
+        2.2657059999999998,
+        0.14237615871830278
+      ],
+      "dif": {
+        "n": 30,
+        "media": 3.124804166666665,
+        "dp": 5.935214974816526,
+        "ic": [
+          0.9088073162201113,
+          5.340801017113218
+        ],
+        "mde": 3.141405804129369
+      },
+      "pct": 30.294103796152033,
+      "mediana": 0.5647775000000008,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "net_p99",
+      "rotulo": "Atraso de rede p99",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        7.328622166666666,
+        7.751874683842244
+      ],
+      "b": [
+        3.531334433333332,
+        0.29992006681145117
+      ],
+      "dif": {
+        "n": 30,
+        "media": 3.797287733333335,
+        "dp": 7.671644844987205,
+        "ic": [
+          0.9329701161333417,
+          6.661605350533328
+        ],
+        "mde": 4.060467859297203
+      },
+      "pct": 23.887301986481543,
+      "mediana": 0.583951,
+      "b_melhor": 28
+    },
+    {
+      "kpi": "net_media",
+      "rotulo": "Atraso de rede (media)",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        2.475166666666666,
+        0.9704914941563811
+      ],
+      "b": [
+        1.5816666666666663,
+        0.09069538380578232
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.8935000000000001,
+        "dp": 0.9404886631518965,
+        "ic": [
+          0.5423551932375932,
+          1.244644806762407
+        ],
+        "mde": 0.49778425173800367
+      },
+      "pct": 30.657825434229096,
+      "mediana": 0.5578000000000001,
+      "b_melhor": 30
+    },
+    {
+      "kpi": "jitter_net",
+      "rotulo": "Jitter de rede",
+      "unidade": "us",
+      "casas": 1,
+      "a": [
+        395.1066666666667,
+        205.98080080155668
+      ],
+      "b": [
+        354.8233333333334,
+        173.1965789327924
+      ],
+      "dif": {
+        "n": 30,
+        "media": 40.28333333333333,
+        "dp": 287.7739211823123,
+        "ic": [
+          -67.16114941690978,
+          147.72781608357644
+        ],
+        "mde": 152.31371906745954
+      },
+      "pct": -8.361832376817,
+      "mediana": 56.54999999999998,
+      "b_melhor": 18
+    },
+    {
+      "kpi": "m2p_p50",
+      "rotulo": "Motion-to-photon p50",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        18.783838333333335,
+        2.3660710846684263
+      ],
+      "b": [
+        18.515865,
+        2.3307496020834306
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.26797333333333356,
+        "dp": 3.5496807433115416,
+        "ic": [
+          -1.0573504132614258,
+          1.593297079928093
+        ],
+        "mde": 1.8787841278133044
+      },
+      "pct": -0.3621649944782027,
+      "mediana": 0.3360500000000002,
+      "b_melhor": 15
+    },
+    {
+      "kpi": "m2p_p95",
+      "rotulo": "Motion-to-photon p95",
+      "unidade": "ms",
+      "casas": 3,
+      "a": [
+        22.153900166666666,
+        6.352380910177461
+      ],
+      "b": [
+        19.266121999999996,
+        2.233115502672644
+      ],
+      "dif": {
+        "n": 30,
+        "media": 2.887778166666665,
+        "dp": 6.787829753817321,
+        "ic": [
+          0.3534454727962846,
+          5.422110860537045
+        ],
+        "mde": 3.5926799410905788
+      },
+      "pct": 7.785143420528517,
+      "mediana": 1.0497175000000007,
+      "b_melhor": 19
+    },
+    {
+      "kpi": "perda_pct",
+      "rotulo": "Perda de pacotes DL",
+      "unidade": "%",
+      "casas": 3,
+      "a": [
+        0.016913333333333336,
+        0.011751059624512616
+      ],
+      "b": [
+        0.012936666666666671,
+        0.009539084150838675
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.003976666666666668,
+        "dp": 0.014599898047195596,
+        "ic": [
+          -0.001474412734282303,
+          0.00942774606761564
+        ],
+        "mde": 0.007727471483301256
+      },
+      "pct": -34.80490298676274,
+      "mediana": 0.00095,
+      "b_melhor": 15
+    },
+    {
+      "kpi": "incompletos_pct",
+      "rotulo": "Quadros incompletos",
+      "unidade": "%",
+      "casas": 2,
+      "a": [
+        0.04276666666666668,
+        0.046491143638134017
+      ],
+      "b": [
+        0.022400000000000014,
+        0.011391466860829615
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.020366666666666665,
+        "dp": 0.04545363938490882,
+        "ic": [
+          0.0033959045046094982,
+          0.03733742882872383
+        ],
+        "mde": 0.024057818830221872
+      },
+      "pct": 30.77359840490206,
+      "mediana": 0.0,
+      "b_melhor": 10
+    },
+    {
+      "kpi": "vazao_mbps",
+      "rotulo": "Vazao DL",
+      "unidade": "Mbps",
+      "casas": 2,
+      "a": [
+        25.33896666666667,
+        0.0037368928023282077
+      ],
+      "b": [
+        25.340133333333338,
+        0.003319049857116706
+      ],
+      "dif": {
+        "n": 30,
+        "media": -0.0011666666666666713,
+        "dp": 0.00482867393328945,
+        "ic": [
+          -0.0029695206952747204,
+          0.0006361873619413778
+        ],
+        "mde": 0.002555732923684467
+      },
+      "pct": null,
+      "mediana": 0.0,
+      "b_melhor": null
+    }
+  ],
+  "secundaria": [
+    {
+      "kpi": "net_p50",
+      "rotulo": "Atraso de rede p50",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        1.5823549999999997,
+        0.1109525670244287
+      ],
+      "remoto": [
+        2.066293333333333,
+        0.10392933419274426
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.48393833333333336,
+        "dp": 0.15675514823164957,
+        "ic": [
+          0.4254115712452666,
+          0.5424650954214001
+        ],
+        "mde": 0.08296776689159198
+      },
+      "pct": 31.21995635107629
+    },
+    {
+      "kpi": "net_p95",
+      "rotulo": "Atraso de rede p95",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        2.2657059999999998,
+        0.14237615871830278
+      ],
+      "remoto": [
+        4.034957499999999,
+        0.6417067608980971
+      ],
+      "dif": {
+        "n": 30,
+        "media": 1.7692514999999989,
+        "dp": 0.6267314890656647,
+        "ic": [
+          1.5352523926823867,
+          2.0032506073176113
+        ],
+        "mde": 0.331718049933378
+      },
+      "pct": 78.41291569450735
+    },
+    {
+      "kpi": "net_p99",
+      "rotulo": "Atraso de rede p99",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        3.531334433333332,
+        0.29992006681145117
+      ],
+      "remoto": [
+        7.081443866666664,
+        4.8656159597951225
+      ],
+      "dif": {
+        "n": 30,
+        "media": 3.550109433333331,
+        "dp": 4.768668843688239,
+        "ic": [
+          1.7696591576021787,
+          5.330559709064483
+        ],
+        "mde": 2.523973275963135
+      },
+      "pct": 98.37300926488595
+    },
+    {
+      "kpi": "net_media",
+      "rotulo": "Atraso de rede (media)",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        1.5816666666666663,
+        0.09069538380578232
+      ],
+      "remoto": [
+        2.27144,
+        0.2530865718041679
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.6897733333333333,
+        "dp": 0.25085465764934045,
+        "ic": [
+          0.5961131822470669,
+          0.7834334844195998
+        ],
+        "mde": 0.13277299657657038
+      },
+      "pct": 43.887050932340436
+    },
+    {
+      "kpi": "jitter_net",
+      "rotulo": "Jitter de rede",
+      "unidade": "us",
+      "casas": 1,
+      "mec": [
+        354.8233333333334,
+        173.1965789327924
+      ],
+      "remoto": [
+        541.19,
+        239.59568436329826
+      ],
+      "dif": {
+        "n": 30,
+        "media": 186.3666666666667,
+        "dp": 305.1712084007625,
+        "ic": [
+          72.42665951739515,
+          300.30667381593827
+        ],
+        "mde": 161.5217998658867
+      },
+      "pct": 79.0075479532786
+    },
+    {
+      "kpi": "m2p_p50",
+      "rotulo": "Motion-to-photon p50",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        18.515865,
+        2.3307496020834306
+      ],
+      "remoto": [
+        18.118364999999997,
+        2.513673616139164
+      ],
+      "dif": {
+        "n": 30,
+        "media": -0.39749999999999974,
+        "dp": 3.2252391493259576,
+        "ic": [
+          -1.6016888671545852,
+          0.8066888671545858
+        ],
+        "mde": 1.707062848841635
+      },
+      "pct": -0.6708925390678948
+    },
+    {
+      "kpi": "m2p_p95",
+      "rotulo": "Motion-to-photon p95",
+      "unidade": "ms",
+      "casas": 3,
+      "mec": [
+        19.266121999999996,
+        2.233115502672644
+      ],
+      "remoto": [
+        21.224360666666666,
+        2.069494577577326
+      ],
+      "dif": {
+        "n": 30,
+        "media": 1.9582386666666642,
+        "dp": 2.4281890822760017,
+        "ic": [
+          1.0516397681526866,
+          2.864837565180642
+        ],
+        "mde": 1.2851981451305727
+      },
+      "pct": 11.179309353014844
+    },
+    {
+      "kpi": "perda_pct",
+      "rotulo": "Perda de pacotes DL",
+      "unidade": "%",
+      "casas": 3,
+      "mec": [
+        0.012936666666666671,
+        0.009539084150838675
+      ],
+      "remoto": [
+        0.013336666666666667,
+        0.010412905895829574
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.00039999999999999964,
+        "dp": 0.013676433291842099,
+        "ic": [
+          -0.004706290712073384,
+          0.0055062907120733825
+        ],
+        "mde": 0.007238697689144615
+      },
+      "pct": -10.44887606290398
+    },
+    {
+      "kpi": "incompletos_pct",
+      "rotulo": "Quadros incompletos",
+      "unidade": "%",
+      "casas": 2,
+      "mec": [
+        0.022400000000000014,
+        0.011391466860829615
+      ],
+      "remoto": [
+        0.039966666666666685,
+        0.05335921426638924
+      ],
+      "dif": {
+        "n": 30,
+        "media": 0.017566666666666668,
+        "dp": 0.053275913774479246,
+        "ic": [
+          -0.0023246527935113885,
+          0.03745798612684473
+        ],
+        "mde": 0.02819801228120107
+      },
+      "pct": 53.42261904761906
+    },
+    {
+      "kpi": "vazao_mbps",
+      "rotulo": "Vazao DL",
+      "unidade": "Mbps",
+      "casas": 2,
+      "mec": [
+        25.340133333333338,
+        0.003319049857116706
+      ],
+      "remoto": [
+        25.336199999999998,
+        0.0056470926300546285
+      ],
+      "dif": {
+        "n": 30,
+        "media": -0.003933333333333403,
+        "dp": 0.006872901978727849,
+        "ic": [
+          -0.006499428951253226,
+          -0.0013672377154135803
+        ],
+        "mde": 0.003637707186479006
+      },
+      "pct": null
+    }
+  ],
+  "por_rodada": [
+    {
+      "rodada": 1,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 2,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 3,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 4,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 5,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 6,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 7,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 8,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 9,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 10,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 11,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 12,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 13,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 14,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 15,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 16,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 17,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 18,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 19,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 20,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 21,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 22,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 23,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 24,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 25,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 26,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 27,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 28,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 29,
+      "ordem": "A>B",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    },
+    {
+      "rodada": 30,
+      "ordem": "B>A",
+      "a_valida": true,
+      "b_valida": true,
+      "b_valida_remoto": true,
+      "par_valido": true,
+      "a_fundo": null,
+      "b_fundo": null
+    }
+  ]
+}

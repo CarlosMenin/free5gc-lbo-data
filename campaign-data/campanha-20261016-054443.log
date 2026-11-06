@@ -1,0 +1,483 @@
+  registro deste comando: campanha-20261016-054443.json e .log
+
+  perfis, nesta ordem: vr-360 (30 rodadas cada)
+  caminhos medidos: a-mec, b-mec e b-remoto   niveis: sem fundo, 50%, 80%, 95%, 99%   fundo: pelo tunel GTP-U
+  aviso: no cenario A o trafego da propria aplicacao soma ao fundo no enlace; a 99%, nos perfis pesados, a carga passa da capacidade e a fila fica cheia o tempo todo (perda alta e poucos quadros completos no A).
+
+  fundo: aplicando congestao\ruido-gtp.yaml (pelo tunel GTP-U)
+  fundo: gerador em petshopboys, UERANSIM de ruido em brix-porvir-03 (UE imsi-208930000090000)
+
+########################################################################
+# vr-360 -- RODADA 30 de 30: B -> A   niveis: fundo-99 -> sem-fundo -> fundo-50 -> fundo-80 -> fundo-95
+########################################################################
+    capacidade util nuvem -> borda nesta rodada: 896 Mbps
+
+    B -- fundo-99 (deploy)
+    B [01] Ferramentas e conexao com o cluster
+    B   OK   contexto: cemenin-context
+    B   OK   39 no(s) no cluster
+    B [02] Consistencia estatica dos manifestos (validate.py)
+    B   OK   manifestos consistentes
+    B [03] Deploy do cenario B + perfil de carga 'vr-360'
+    B   OK   cenario B aplicado
+    B   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    B [04] Pods do plano de controle e de usuario prontos
+    B   OK   16 deployments do cenario B presentes, nenhum residuo do A
+    B   OK   todos os pods prontos
+    B   OK   9 NFs com registro confirmado no NRF
+    B [05] Placement real das pecas + gtp5g nos nos dos UPFs
+    B   OK   placement fiel a Figura 3 do TG1: Edge Node em brix-porvir-05, Server Node em petshopboys, servico remoto em metallica
+    B   OK   gtp5g presente nos dois nos que hospedam UPF
+    B [06] Assinantes no MongoDB
+    B   OK   5 assinante(s) carregado(s)
+    B [07] Associacao PFCP: o SMF precisa enxergar OS DOIS UPFs
+    B   OK   I-UPF e PSA-UPF associados ao SMF (heartbeat PFCP ativo nos dois)
+    B [08] Tester UERANSIM (gNB + UE)
+    B   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    B   OK   NG Setup com a AMF concluido
+    B   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    B [09] Sessao PDU: interface de tunel com IP do pool do PSA-UPF
+    B   OK   uesimtun0 = 60.60.0.1
+    B [10] Rota dos destinos por DENTRO do tunel do UE
+    B   OK   mec-app e remote-app roteados pelo tunel
+    B [11] PROVA DO LOCAL BREAKOUT (o teste que define o cenario B)
+    B   OK   LBO CONFIRMADO: PSA-UPF viu 0 pacotes do trafego MEC e 1201 do trafego remoto
+    B [12] Campanha de medicao VR (60.0s por caminho)
+    B fundo ligado: 887 Mbps (99% de 896); GTP-U do fundo veio so' da psa-upf: psa-upf via 10.106.144.51 (30)
+    B [13] Coleta dos resultados
+    B   OK   5 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-99\vr-360\rodada-30\b\vr-360\run-01: b-mec.csv, b-mec.json, b-remoto.csv, b-remoto.json, resumo-completo.json
+    B [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    B CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 520s
+    B fundo desligado: cruzaram 878 de 887 Mbps em 128s
+    B fundo-99 terminou (rc=0) em 523s: CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 520s
+
+    B -- sem-fundo (mesmo deploy)
+    B [01] Ferramentas e conexao com o cluster
+    B   OK   contexto: cemenin-context
+    B   OK   39 no(s) no cluster
+    B [02] Consistencia estatica dos manifestos (validate.py)
+    B   OK   manifestos consistentes
+    B [03] Deploy do cenario B + perfil de carga 'vr-360'
+    B   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    B [04] Pods do plano de controle e de usuario prontos
+    B   OK   16 deployments do cenario B presentes, nenhum residuo do A
+    B   OK   todos os pods prontos
+    B   OK   9 NFs com registro confirmado no NRF
+    B [05] Placement real das pecas + gtp5g nos nos dos UPFs
+    B   OK   placement fiel a Figura 3 do TG1: Edge Node em brix-porvir-05, Server Node em petshopboys, servico remoto em metallica
+    B   OK   gtp5g presente nos dois nos que hospedam UPF
+    B [06] Assinantes no MongoDB
+    B   OK   5 assinante(s) carregado(s)
+    B [07] Associacao PFCP: o SMF precisa enxergar OS DOIS UPFs
+    B   OK   I-UPF e PSA-UPF associados ao SMF (heartbeat PFCP ativo nos dois)
+    B [08] Tester UERANSIM (gNB + UE)
+    B   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    B   OK   NG Setup com a AMF concluido
+    B   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    B [09] Sessao PDU: interface de tunel com IP do pool do PSA-UPF
+    B   OK   uesimtun0 = 60.60.0.1
+    B [10] Rota dos destinos por DENTRO do tunel do UE
+    B   OK   mec-app e remote-app roteados pelo tunel
+    B [11] PROVA DO LOCAL BREAKOUT (o teste que define o cenario B)
+    B   OK   LBO CONFIRMADO: PSA-UPF viu 0 pacotes do trafego MEC e 1201 do trafego remoto
+    B [12] Campanha de medicao VR (60.0s por caminho)
+    B [13] Coleta dos resultados
+    B   OK   5 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\sem-fundo\vr-360\rodada-30\b\vr-360\run-01: b-mec.csv, b-mec.json, b-remoto.csv, b-remoto.json, resumo-completo.json
+    B [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    B CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 173s
+    B sem-fundo terminou (rc=0) em 173s: CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 173s
+
+    B -- fundo-50 (mesmo deploy)
+    B [01] Ferramentas e conexao com o cluster
+    B   OK   contexto: cemenin-context
+    B   OK   39 no(s) no cluster
+    B [02] Consistencia estatica dos manifestos (validate.py)
+    B   OK   manifestos consistentes
+    B [03] Deploy do cenario B + perfil de carga 'vr-360'
+    B   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    B [04] Pods do plano de controle e de usuario prontos
+    B   OK   16 deployments do cenario B presentes, nenhum residuo do A
+    B   OK   todos os pods prontos
+    B   OK   9 NFs com registro confirmado no NRF
+    B [05] Placement real das pecas + gtp5g nos nos dos UPFs
+    B   OK   placement fiel a Figura 3 do TG1: Edge Node em brix-porvir-05, Server Node em petshopboys, servico remoto em metallica
+    B   OK   gtp5g presente nos dois nos que hospedam UPF
+    B [06] Assinantes no MongoDB
+    B   OK   5 assinante(s) carregado(s)
+    B [07] Associacao PFCP: o SMF precisa enxergar OS DOIS UPFs
+    B   OK   I-UPF e PSA-UPF associados ao SMF (heartbeat PFCP ativo nos dois)
+    B [08] Tester UERANSIM (gNB + UE)
+    B   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    B   OK   NG Setup com a AMF concluido
+    B   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    B [09] Sessao PDU: interface de tunel com IP do pool do PSA-UPF
+    B   OK   uesimtun0 = 60.60.0.1
+    B [10] Rota dos destinos por DENTRO do tunel do UE
+    B   OK   mec-app e remote-app roteados pelo tunel
+    B [11] PROVA DO LOCAL BREAKOUT (o teste que define o cenario B)
+    B   OK   LBO CONFIRMADO: PSA-UPF viu 0 pacotes do trafego MEC e 1201 do trafego remoto
+    B [12] Campanha de medicao VR (60.0s por caminho)
+    B fundo ligado: 448 Mbps (50% de 896); GTP-U do fundo veio so' da psa-upf: psa-upf via 10.106.144.51 (30)
+    B [13] Coleta dos resultados
+    B   OK   5 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-50\vr-360\rodada-30\b\vr-360\run-01: b-mec.csv, b-mec.json, b-remoto.csv, b-remoto.json, resumo-completo.json
+    B [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    B CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 173s
+    B fundo desligado: cruzaram 449 de 448 Mbps em 128s
+    B fundo-50 terminou (rc=0) em 177s: CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 173s
+
+    B -- fundo-80 (mesmo deploy)
+    B [01] Ferramentas e conexao com o cluster
+    B   OK   contexto: cemenin-context
+    B   OK   39 no(s) no cluster
+    B [02] Consistencia estatica dos manifestos (validate.py)
+    B   OK   manifestos consistentes
+    B [03] Deploy do cenario B + perfil de carga 'vr-360'
+    B   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    B [04] Pods do plano de controle e de usuario prontos
+    B   OK   16 deployments do cenario B presentes, nenhum residuo do A
+    B   OK   todos os pods prontos
+    B   OK   9 NFs com registro confirmado no NRF
+    B [05] Placement real das pecas + gtp5g nos nos dos UPFs
+    B   OK   placement fiel a Figura 3 do TG1: Edge Node em brix-porvir-05, Server Node em petshopboys, servico remoto em metallica
+    B   OK   gtp5g presente nos dois nos que hospedam UPF
+    B [06] Assinantes no MongoDB
+    B   OK   5 assinante(s) carregado(s)
+    B [07] Associacao PFCP: o SMF precisa enxergar OS DOIS UPFs
+    B   OK   I-UPF e PSA-UPF associados ao SMF (heartbeat PFCP ativo nos dois)
+    B [08] Tester UERANSIM (gNB + UE)
+    B   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    B   OK   NG Setup com a AMF concluido
+    B   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    B [09] Sessao PDU: interface de tunel com IP do pool do PSA-UPF
+    B   OK   uesimtun0 = 60.60.0.1
+    B [10] Rota dos destinos por DENTRO do tunel do UE
+    B   OK   mec-app e remote-app roteados pelo tunel
+    B [11] PROVA DO LOCAL BREAKOUT (o teste que define o cenario B)
+    B   OK   LBO CONFIRMADO: PSA-UPF viu 0 pacotes do trafego MEC e 1201 do trafego remoto
+    B [12] Campanha de medicao VR (60.0s por caminho)
+    B fundo ligado: 717 Mbps (80% de 896); GTP-U do fundo veio so' da psa-upf: psa-upf via 10.106.144.51 (30)
+    B [13] Coleta dos resultados
+    B   OK   5 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-80\vr-360\rodada-30\b\vr-360\run-01: b-mec.csv, b-mec.json, b-remoto.csv, b-remoto.json, resumo-completo.json
+    B [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    B CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 174s
+    B fundo desligado: cruzaram 711 de 717 Mbps em 129s
+    B fundo-80 terminou (rc=0) em 178s: CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 174s
+
+    B -- fundo-95 (mesmo deploy)
+    B [01] Ferramentas e conexao com o cluster
+    B   OK   contexto: cemenin-context
+    B   OK   39 no(s) no cluster
+    B [02] Consistencia estatica dos manifestos (validate.py)
+    B   OK   manifestos consistentes
+    B [03] Deploy do cenario B + perfil de carga 'vr-360'
+    B   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    B [04] Pods do plano de controle e de usuario prontos
+    B   OK   16 deployments do cenario B presentes, nenhum residuo do A
+    B   OK   todos os pods prontos
+    B   OK   9 NFs com registro confirmado no NRF
+    B [05] Placement real das pecas + gtp5g nos nos dos UPFs
+    B   OK   placement fiel a Figura 3 do TG1: Edge Node em brix-porvir-05, Server Node em petshopboys, servico remoto em metallica
+    B   OK   gtp5g presente nos dois nos que hospedam UPF
+    B [06] Assinantes no MongoDB
+    B   OK   5 assinante(s) carregado(s)
+    B [07] Associacao PFCP: o SMF precisa enxergar OS DOIS UPFs
+    B   OK   I-UPF e PSA-UPF associados ao SMF (heartbeat PFCP ativo nos dois)
+    B [08] Tester UERANSIM (gNB + UE)
+    B   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    B   OK   NG Setup com a AMF concluido
+    B   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    B [09] Sessao PDU: interface de tunel com IP do pool do PSA-UPF
+    B   OK   uesimtun0 = 60.60.0.1
+    B [10] Rota dos destinos por DENTRO do tunel do UE
+    B   OK   mec-app e remote-app roteados pelo tunel
+    B [11] PROVA DO LOCAL BREAKOUT (o teste que define o cenario B)
+    B   OK   LBO CONFIRMADO: PSA-UPF viu 0 pacotes do trafego MEC e 1201 do trafego remoto
+    B [12] Campanha de medicao VR (60.0s por caminho)
+    B fundo ligado: 852 Mbps (95% de 896); GTP-U do fundo veio so' da psa-upf: psa-upf via 10.106.144.51 (30)
+    B [13] Coleta dos resultados
+    B   OK   5 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-95\vr-360\rodada-30\b\vr-360\run-01: b-mec.csv, b-mec.json, b-remoto.csv, b-remoto.json, resumo-completo.json
+    B [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    B CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 172s
+    B fundo desligado: cruzaram 842 de 852 Mbps em 128s
+    B fundo-95 terminou (rc=0) em 176s: CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 172s
+
+========================================================================
+[14] Derrubando o cenario (deployments e statefulset)
+========================================================================
+  # Cada repeticao da campanha precisa comecar do zero. Sem derrubar, a
+  # execucao seguinte mediria um core que ja' esta' de pe' ha' muito
+  # tempo, com caches quentes e sessoes antigas -- e as repeticoes
+  # deixariam de ser independentes entre si.
+
+  # So' Deployments e o StatefulSet saem, e sempre por nome. Services,
+  # ConfigMaps e o PVC do Mongo continuam; o namespace nunca e' tocado.
+
+  ..   pods encerrarem: 16 pod(s) ainda terminando
+  ..   pods encerrarem: 15 pod(s) ainda terminando
+  ..   pods encerrarem: 6 pod(s) ainda terminando
+  ..   pods encerrarem: 3 pod(s) ainda terminando
+  OK   deployments e statefulset removidos; namespace preservado
+
+    A -- fundo-99 (deploy)
+    A [01] Ferramentas e conexao com o cluster
+    A   OK   contexto: cemenin-context
+    A   OK   39 no(s) no cluster
+    A [02] Consistencia estatica dos manifestos (validate.py)
+    A   OK   manifestos consistentes
+    A [03] Deploy do cenario A + perfil de carga 'vr-360'
+    A   OK   cenario A aplicado
+    A   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    A [04] Pods do plano de controle e de usuario prontos
+    A   OK   15 deployments do cenario A presentes, nenhum residuo do B
+    A   OK   todos os pods prontos
+    A   OK   9 NFs com registro confirmado no NRF
+    A [05] Placement real das pecas + gtp5g no no da UPF central
+    A   OK   placement fiel a Figura 3 do TG1 (cenario A): UPF central em petshopboys, MEC na borda em brix-porvir-05, tester em brix-porvir-02
+    A   OK   gtp5g presente no no da UPF central
+    A [06] Assinantes no MongoDB
+    A   OK   5 assinante(s) carregado(s)
+    A [07] Associacao PFCP: o SMF precisa enxergar a UPF central
+    A   OK   UPF central associada ao SMF (heartbeat PFCP ativo)
+    A [08] Tester UERANSIM (gNB + UE)
+    A   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    A   OK   NG Setup com a AMF concluido
+    A   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    A [09] Sessao PDU: interface de tunel com IP do pool da UPF central
+    A   OK   uesimtun0 = 60.60.0.1
+    A [10] Rota dos destinos por DENTRO do tunel do UE
+    A   OK   mec-app e remote-app roteados pelo tunel
+    A [11] PROVA DA ANCORAGEM CENTRAL (o teste que define o cenario A)
+    A   OK   ANCORAGEM CENTRAL CONFIRMADA: a UPF central viu 1201 pkts sob trafego MEC e 1201 sob trafego remoto -- o trafego de borda sobe ao nucleo
+    A [12] Campanha de medicao VR (60.0s por caminho)
+    A fundo ligado: 887 Mbps (99% de 896); GTP-U do fundo veio so' da upf: upf via 10.106.166.83 (30)
+    A [13] Coleta dos resultados
+    A   OK   3 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-99\vr-360\rodada-30\a\vr-360\run-01: a-mec.csv, a-mec.json, resumo-completo.json
+    A [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    A CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 477s
+    A fundo desligado: cruzaram 873 de 887 Mbps em 63s
+    A fundo-99 terminou (rc=0) em 480s: CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 477s
+
+    A -- sem-fundo (mesmo deploy)
+    A [01] Ferramentas e conexao com o cluster
+    A   OK   contexto: cemenin-context
+    A   OK   39 no(s) no cluster
+    A [02] Consistencia estatica dos manifestos (validate.py)
+    A   OK   manifestos consistentes
+    A [03] Deploy do cenario A + perfil de carga 'vr-360'
+    A   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    A [04] Pods do plano de controle e de usuario prontos
+    A   OK   15 deployments do cenario A presentes, nenhum residuo do B
+    A   OK   todos os pods prontos
+    A   OK   9 NFs com registro confirmado no NRF
+    A [05] Placement real das pecas + gtp5g no no da UPF central
+    A   OK   placement fiel a Figura 3 do TG1 (cenario A): UPF central em petshopboys, MEC na borda em brix-porvir-05, tester em brix-porvir-02
+    A   OK   gtp5g presente no no da UPF central
+    A [06] Assinantes no MongoDB
+    A   OK   5 assinante(s) carregado(s)
+    A [07] Associacao PFCP: o SMF precisa enxergar a UPF central
+    A   OK   UPF central associada ao SMF (heartbeat PFCP ativo)
+    A [08] Tester UERANSIM (gNB + UE)
+    A   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    A   OK   NG Setup com a AMF concluido
+    A   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    A [09] Sessao PDU: interface de tunel com IP do pool da UPF central
+    A   OK   uesimtun0 = 60.60.0.1
+    A [10] Rota dos destinos por DENTRO do tunel do UE
+    A   OK   mec-app e remote-app roteados pelo tunel
+    A [11] PROVA DA ANCORAGEM CENTRAL (o teste que define o cenario A)
+    A   OK   ANCORAGEM CENTRAL CONFIRMADA: a UPF central viu 1201 pkts sob trafego MEC e 1201 sob trafego remoto -- o trafego de borda sobe ao nucleo
+    A [12] Campanha de medicao VR (60.0s por caminho)
+    A [13] Coleta dos resultados
+    A   OK   3 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\sem-fundo\vr-360\rodada-30\a\vr-360\run-01: a-mec.csv, a-mec.json, resumo-completo.json
+    A [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    A CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 107s
+    A sem-fundo terminou (rc=0) em 107s: CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 107s
+
+    A -- fundo-50 (mesmo deploy)
+    A [01] Ferramentas e conexao com o cluster
+    A   OK   contexto: cemenin-context
+    A   OK   39 no(s) no cluster
+    A [02] Consistencia estatica dos manifestos (validate.py)
+    A   OK   manifestos consistentes
+    A [03] Deploy do cenario A + perfil de carga 'vr-360'
+    A   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    A [04] Pods do plano de controle e de usuario prontos
+    A   OK   15 deployments do cenario A presentes, nenhum residuo do B
+    A   OK   todos os pods prontos
+    A   OK   9 NFs com registro confirmado no NRF
+    A [05] Placement real das pecas + gtp5g no no da UPF central
+    A   OK   placement fiel a Figura 3 do TG1 (cenario A): UPF central em petshopboys, MEC na borda em brix-porvir-05, tester em brix-porvir-02
+    A   OK   gtp5g presente no no da UPF central
+    A [06] Assinantes no MongoDB
+    A   OK   5 assinante(s) carregado(s)
+    A [07] Associacao PFCP: o SMF precisa enxergar a UPF central
+    A   OK   UPF central associada ao SMF (heartbeat PFCP ativo)
+    A [08] Tester UERANSIM (gNB + UE)
+    A   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    A   OK   NG Setup com a AMF concluido
+    A   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    A [09] Sessao PDU: interface de tunel com IP do pool da UPF central
+    A   OK   uesimtun0 = 60.60.0.1
+    A [10] Rota dos destinos por DENTRO do tunel do UE
+    A   OK   mec-app e remote-app roteados pelo tunel
+    A [11] PROVA DA ANCORAGEM CENTRAL (o teste que define o cenario A)
+    A   OK   ANCORAGEM CENTRAL CONFIRMADA: a UPF central viu 1201 pkts sob trafego MEC e 1201 sob trafego remoto -- o trafego de borda sobe ao nucleo
+    A [12] Campanha de medicao VR (60.0s por caminho)
+    A fundo ligado: 448 Mbps (50% de 896); GTP-U do fundo veio so' da upf: upf via 10.106.166.83 (30)
+    A [13] Coleta dos resultados
+    A   OK   3 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-50\vr-360\rodada-30\a\vr-360\run-01: a-mec.csv, a-mec.json, resumo-completo.json
+    A [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    A CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 105s
+    A fundo desligado: cruzaram 448 de 448 Mbps em 63s
+    A fundo-50 terminou (rc=0) em 109s: CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 105s
+
+    A -- fundo-80 (mesmo deploy)
+    A [01] Ferramentas e conexao com o cluster
+    A   OK   contexto: cemenin-context
+    A   OK   39 no(s) no cluster
+    A [02] Consistencia estatica dos manifestos (validate.py)
+    A   OK   manifestos consistentes
+    A [03] Deploy do cenario A + perfil de carga 'vr-360'
+    A   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    A [04] Pods do plano de controle e de usuario prontos
+    A   OK   15 deployments do cenario A presentes, nenhum residuo do B
+    A   OK   todos os pods prontos
+    A   OK   9 NFs com registro confirmado no NRF
+    A [05] Placement real das pecas + gtp5g no no da UPF central
+    A   OK   placement fiel a Figura 3 do TG1 (cenario A): UPF central em petshopboys, MEC na borda em brix-porvir-05, tester em brix-porvir-02
+    A   OK   gtp5g presente no no da UPF central
+    A [06] Assinantes no MongoDB
+    A   OK   5 assinante(s) carregado(s)
+    A [07] Associacao PFCP: o SMF precisa enxergar a UPF central
+    A   OK   UPF central associada ao SMF (heartbeat PFCP ativo)
+    A [08] Tester UERANSIM (gNB + UE)
+    A   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    A   OK   NG Setup com a AMF concluido
+    A   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    A [09] Sessao PDU: interface de tunel com IP do pool da UPF central
+    A   OK   uesimtun0 = 60.60.0.1
+    A [10] Rota dos destinos por DENTRO do tunel do UE
+    A   OK   mec-app e remote-app roteados pelo tunel
+    A [11] PROVA DA ANCORAGEM CENTRAL (o teste que define o cenario A)
+    A   OK   ANCORAGEM CENTRAL CONFIRMADA: a UPF central viu 1201 pkts sob trafego MEC e 1201 sob trafego remoto -- o trafego de borda sobe ao nucleo
+    A [12] Campanha de medicao VR (60.0s por caminho)
+    A fundo ligado: 717 Mbps (80% de 896); GTP-U do fundo veio so' da upf: upf via 10.106.166.83 (30)
+    A [13] Coleta dos resultados
+    A   OK   3 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-80\vr-360\rodada-30\a\vr-360\run-01: a-mec.csv, a-mec.json, resumo-completo.json
+    A [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    A CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 106s
+    A fundo desligado: cruzaram 706 de 717 Mbps em 63s
+    A fundo-80 terminou (rc=0) em 110s: CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 106s
+
+    A -- fundo-95 (mesmo deploy)
+    A [01] Ferramentas e conexao com o cluster
+    A   OK   contexto: cemenin-context
+    A   OK   39 no(s) no cluster
+    A [02] Consistencia estatica dos manifestos (validate.py)
+    A   OK   manifestos consistentes
+    A [03] Deploy do cenario A + perfil de carga 'vr-360'
+    A   OK   perfil 'vr-360' ativo e identico nos dois caminhos (25.3 Mbps efetivos)
+    A [04] Pods do plano de controle e de usuario prontos
+    A   OK   15 deployments do cenario A presentes, nenhum residuo do B
+    A   OK   todos os pods prontos
+    A   OK   9 NFs com registro confirmado no NRF
+    A [05] Placement real das pecas + gtp5g no no da UPF central
+    A   OK   placement fiel a Figura 3 do TG1 (cenario A): UPF central em petshopboys, MEC na borda em brix-porvir-05, tester em brix-porvir-02
+    A   OK   gtp5g presente no no da UPF central
+    A [06] Assinantes no MongoDB
+    A   OK   5 assinante(s) carregado(s)
+    A [07] Associacao PFCP: o SMF precisa enxergar a UPF central
+    A   OK   UPF central associada ao SMF (heartbeat PFCP ativo)
+    A [08] Tester UERANSIM (gNB + UE)
+    A   OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+    A   OK   NG Setup com a AMF concluido
+    A   AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+    A [09] Sessao PDU: interface de tunel com IP do pool da UPF central
+    A   OK   uesimtun0 = 60.60.0.1
+    A [10] Rota dos destinos por DENTRO do tunel do UE
+    A   OK   mec-app e remote-app roteados pelo tunel
+    A [11] PROVA DA ANCORAGEM CENTRAL (o teste que define o cenario A)
+    A   OK   ANCORAGEM CENTRAL CONFIRMADA: a UPF central viu 1201 pkts sob trafego MEC e 1201 sob trafego remoto -- o trafego de borda sobe ao nucleo
+    A [12] Campanha de medicao VR (60.0s por caminho)
+    A fundo ligado: 852 Mbps (95% de 896); GTP-U do fundo veio so' da upf: upf via 10.106.166.83 (30)
+    A [13] Coleta dos resultados
+    A   OK   3 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-95\vr-360\rodada-30\a\vr-360\run-01: a-mec.csv, a-mec.json, resumo-completo.json
+    A [99] RESUMO DA CAMPANHA - perfil 'vr-360' (25 Mbps @ 60 fps, pose 120 Hz)
+    A CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 106s
+    A fundo desligado: cruzaram 837 de 852 Mbps em 63s
+    A fundo-95 terminou (rc=0) em 109s: CENARIO A VALIDADO -- 1 execucao(oes) em 1 cenario(s), 106s
+
+========================================================================
+[14] Derrubando o cenario (deployments e statefulset)
+========================================================================
+  # Cada repeticao da campanha precisa comecar do zero. Sem derrubar, a
+  # execucao seguinte mediria um core que ja' esta' de pe' ha' muito
+  # tempo, com caches quentes e sessoes antigas -- e as repeticoes
+  # deixariam de ser independentes entre si.
+
+  # So' Deployments e o StatefulSet saem, e sempre por nome. Services,
+  # ConfigMaps e o PVC do Mongo continuam; o namespace nunca e' tocado.
+
+  ..   pods encerrarem: 15 pod(s) ainda terminando
+  ..   pods encerrarem: 14 pod(s) ainda terminando
+  ..   pods encerrarem: 5 pod(s) ainda terminando
+  ..   pods encerrarem: 3 pod(s) ainda terminando
+  OK   deployments e statefulset removidos; namespace preservado
+
+========================================================================
+LOCAL BREAKOUT SOB CONGESTAO DO BACKHAUL (a-mec x b-mec)
+========================================================================
+  backhaul  KPI                       A: central      B: LBO     A - B                IC 95%  B abaixo
+  sem fundo Atraso de rede p50 (ms)        2.102       1.582    +0.520      [+0.472; +0.567]     30/30
+            Atraso de rede p99 (ms)        7.329       3.531    +3.797      [+0.933; +6.662]     28/30
+            Jitter de rede (us)            395.1       354.8     +40.3       [-67.2; +147.7]     18/30
+            Perda de pacotes DL (%)        0.017       0.013    +0.004      [-0.001; +0.009]     15/30
+            Quadros incompletos (%)         0.04        0.02     +0.02        [+0.00; +0.04]     10/30
+  50%       Atraso de rede p50 (ms)        2.181       1.577    +0.604      [+0.554; +0.654]     29/29
+            Atraso de rede p99 (ms)        4.921       3.495    +1.426      [+0.245; +2.607]     28/29
+            Jitter de rede (us)            397.8       344.3     +53.5        [-7.1; +114.1]     20/29
+            Perda de pacotes DL (%)        0.016       0.016    -0.000      [-0.006; +0.005]     13/29
+            Quadros incompletos (%)         0.12        0.03     +0.10        [+0.06; +0.14]     26/29
+  80%       Atraso de rede p50 (ms)        2.461       1.566    +0.895      [+0.824; +0.966]     30/30
+            Atraso de rede p99 (ms)        4.934       3.480    +1.454      [+1.279; +1.629]     30/30
+            Jitter de rede (us)            463.3       328.6    +134.7       [+83.5; +185.9]     24/30
+            Perda de pacotes DL (%)        0.079       0.012    +0.067      [+0.059; +0.075]     30/30
+            Quadros incompletos (%)         0.74        0.02     +0.72        [+0.65; +0.78]     30/30
+  95%       Atraso de rede p50 (ms)        3.122       1.592    +1.530      [+1.131; +1.930]     30/30
+            Atraso de rede p99 (ms)        7.756       3.558    +4.198      [+2.759; +5.637]     30/30
+            Jitter de rede (us)            575.4       359.1    +216.4       [+99.4; +333.4]     25/30
+            Perda de pacotes DL (%)        0.283       0.012    +0.271      [+0.169; +0.374]     30/30
+            Quadros incompletos (%)         5.09        0.03     +5.07        [+2.46; +7.68]     30/30
+  99%       Atraso de rede p50 (ms)        4.871       1.618    +3.254      [+2.890; +3.617]     27/27
+            Atraso de rede p99 (ms)        8.914       3.457    +5.457      [+4.645; +6.268]     27/27
+            Jitter de rede (us)            534.7       347.3    +187.4      [+119.5; +255.4]     24/27
+            Perda de pacotes DL (%)        0.815       0.014    +0.800      [+0.587; +1.014]     27/27
+            Quadros incompletos (%)        14.60        0.02    +14.58      [+12.05; +17.11]     27/27
+
+  quanto a congestao custa (contra o sem fundo, na mesma rodada)
+  backhaul  KPI                          A piora     B piora   A piora a mais que B [IC 95%]
+  50%       Atraso de rede p50 (ms)        0.077      -0.007   +0.082 ± 0.187 [+0.011; +0.153]
+  50%       Atraso de rede p99 (ms)       -2.432      -0.043   -2.483 ± 8.723 [-5.800; +0.835]
+  50%       Jitter de rede (us)             -0.2        -0.5   -2.8 ± 332.2 [-129.2; +123.5]
+  50%       Perda de pacotes DL (%)       -0.001       0.003   -0.005 ± 0.020 [-0.012; +0.003]
+  50%       Quadros incompletos (%)         0.08        0.00   +0.08 ± 0.12 [+0.03; +0.12]
+  80%       Atraso de rede p50 (ms)        0.358      -0.017   +0.375 ± 0.228 [+0.290; +0.460]
+  80%       Atraso de rede p99 (ms)       -2.395      -0.051   -2.343 ± 7.688 [-5.214; +0.527]
+  80%       Jitter de rede (us)             68.2       -26.2   +94.4 ± 355.8 [-38.4; +227.3]
+  80%       Perda de pacotes DL (%)        0.062      -0.001   +0.063 ± 0.026 [+0.053; +0.073]
+  80%       Quadros incompletos (%)         0.70        0.00   +0.70 ± 0.18 [+0.63; +0.76]
+  95%       Atraso de rede p50 (ms)        1.020       0.009   +1.010 ± 1.092 [+0.602; +1.418]
+  95%       Atraso de rede p99 (ms)        0.428       0.027   +0.401 ± 9.102 [-2.998; +3.799]
+  95%       Jitter de rede (us)            180.3         4.2   +176.1 ± 408.5 [+23.6; +328.6]
+  95%       Perda de pacotes DL (%)        0.266      -0.001   +0.267 ± 0.276 [+0.164; +0.371]
+  95%       Quadros incompletos (%)         5.05        0.00   +5.05 ± 7.00 [+2.43; +7.66]
+  99%       Atraso de rede p50 (ms)        2.784       0.028   +2.727 ± 0.897 [+2.372; +3.082]
+  99%       Atraso de rede p99 (ms)        1.379      -0.097   +1.866 ± 7.563 [-1.127; +4.858]
+  99%       Jitter de rede (us)            133.7        -1.4   +161.9 ± 278.9 [+51.6; +272.3]
+  99%       Perda de pacotes DL (%)        0.794       0.002   +0.796 ± 0.539 [+0.583; +1.010]
+  99%       Quadros incompletos (%)        14.53        0.00   +14.56 ± 6.41 [+12.02; +17.09]
+
+  Destaque em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp: lbo-sob-congestao-vr-360.md, .csv, .json
+  Tabelas completas por nivel: sem-fundo/vr-360/a-vs-b.md, fundo-50/vr-360/a-vs-b.md, fundo-80/vr-360/a-vs-b.md, fundo-95/vr-360/a-vs-b.md, fundo-99/vr-360/a-vs-b.md
+
+CAMPANHA A x B COM FALHAS (vr-360) -- pares validos: sem fundo 30/30, 50% 29/30, 80% 30/30, 95% 30/30, 99% 27/30 (2237s)

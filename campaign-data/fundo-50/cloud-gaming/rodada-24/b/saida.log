@@ -1,0 +1,368 @@
+
+========================================================================
+[01] Ferramentas e conexao com o cluster
+========================================================================
+  # Confere o kubectl, qual contexto esta ativo e quais nos existem. E'
+  # a primeira coisa porque, com o contexto errado, todo o resto mede o
+  # cluster errado sem dar nenhum sinal disso.
+
+  OK   contexto: cemenin-context
+       no acdc                 Ready
+       no blacksabbath         Ready
+       no brix-porvir-01       Ready
+       no brix-porvir-02       Ready
+       no brix-porvir-03       Ready
+       no brix-porvir-04       Ready
+       no brix-porvir-05       Ready
+       no cei-01               Ready
+       no cei-02               Ready
+       no deeppurple           Ready
+       no erasure              Ready
+       no inspiron-porvir-01   Ready
+       no kiss                 Ready
+       no ledzeppelin          Ready
+       no mac-porvir-01        Ready
+       no mac-porvir-02        Ready
+       no mac-porvir-03        Ready
+       no mac-porvir-04        Ready
+       no mac-porvir-05        Ready
+       no metallica            Ready
+       no molejo               Ready
+       no petshopboys          Ready
+       no petwin-574522        Ready
+       no petwin-574523        Ready
+       no petwin-574524        Ready
+       no petwin-578839        Ready
+       no pinkfloyd            Ready
+       no rasp4-porvir-01      Ready
+       no rasp4-porvir-02      Ready
+       no rasp4-porvir-03      Ready
+       no rasp4-porvir-04      Ready
+       no rasp4-porvir-05      Ready
+       no rasp4-porvir-06      Ready
+       no vanhalen             Ready
+       no wb-fibre-01          Ready
+       no wb-fibre-02          Ready
+       no whitesnake           Ready
+       no xps-porvir-01        Ready
+       no xps-porvir-02        Ready
+  OK   39 no(s) no cluster
+
+========================================================================
+[02] Consistencia estatica dos manifestos (validate.py)
+========================================================================
+  # Parseia os YAML embutidos nos ConfigMaps e checa as regras que o
+  # free5gc so' aplica no boot: versao de cada config, endpoint 0.0.0.0
+  # em campo que vira F-TEID, nome de UPF que precisa casar entre o
+  # smfcfg e o ueRouting.
+
+  # Vale rodar antes de aplicar porque essa classe de erro nao aparece
+  # como erro: o NF sobe normalmente e a sessao PDU simplesmente nunca
+  # fecha.
+
+       Manifestos consistentes.
+  OK   manifestos consistentes
+
+========================================================================
+[03] Deploy do cenario B + perfil de carga 'cloud-gaming'
+========================================================================
+  # Chama o deploy.py up b, que remove o plano de usuario do cenario A
+  # (senao sobra UPF orfao associado ao SMF e a prova do LBO mede a
+  # topologia errada), aplica o plano de controle comum, os dois UPFs do
+  # cenario B, os servicos MEC/remoto e o tester, e reinicia o SMF para
+  # ele reler os ConfigMaps.
+
+  # Depois APLICA O PERFIL DE CARGA nos dois vr-server. Isso vem aqui, e
+  # nao no manifesto, por duas razoes: o manifesto teria que ser editado
+  # a cada cenario (e commitado errado junto), e numa campanha com
+  # --repeticoes o deploy reaplica o YAML a cada execucao -- um 'kubectl
+  # set env' feito antes seria desfeito no meio da campanha, sem aviso,
+  # e metade das repeticoes mediria outra carga.
+
+  ..   deploy pulado (use --deploy para subir o cenario antes do teste)
+  ..   cloud-gaming: 30 Mbps @ 60 fps, pose 120 Hz, MTU 1200 B
+       Jogo renderizado na borda, 1080p60 em HEVC de qualidade alta (~30
+       Mbps). Controle a 120 Hz (gamepad/mouse). Malha fechada, mas
+       tolerante a ~50 ms de m2p.
+  ..   o vr_server deve fechar isso em 53 pacotes por frame = 30.5 Mbps efetivos
+  ..   free5gc-mec-app ja' esta' no perfil
+  ..   free5gc-remote-app ja' esta' no perfil
+       free5gc-mec-app        53 pkt/frame x 1200 B x 60 fps = 30.5 Mbps  (free5gc-mec-app-7cbcdcdf75-kmssj)
+       free5gc-remote-app     53 pkt/frame x 1200 B x 60 fps = 30.5 Mbps  (free5gc-remote-app-6f79d54fbc-mwllj)
+  OK   perfil 'cloud-gaming' ativo e identico nos dois caminhos (30.5 Mbps efetivos)
+
+========================================================================
+[04] Pods do plano de controle e de usuario prontos
+========================================================================
+  # Confere que os deployments do cenario B existem, que nao sobrou nada
+  # do cenario A, e que nenhum pod ficou pendente.
+
+  # Pod parado em Pending quase sempre e' nodeSelector que nenhum no
+  # satisfaz -- lembrando que o seletor e' um AND, entao hostname +
+  # nodetype que nao casam entre si dao zero nos. Quando acontece, o
+  # motivo exato do scheduler e' impresso aqui.
+
+  # Confere tambem se todo NF de SBI fechou registro no NRF. NF que
+  # subiu antes do NRF conseguir gravar no Mongo fica com instance ID
+  # vazio, continua Running e so' quebra no registro do UE -- e la' o
+  # sintoma nao tem relacao obvia com a causa.
+
+  OK   16 deployments do cenario B presentes, nenhum residuo do A
+  OK   todos os pods prontos
+  OK   9 NFs com registro confirmado no NRF
+
+========================================================================
+[05] Placement real das pecas + gtp5g nos nos dos UPFs
+========================================================================
+  # Mostra em que no cada peca caiu de fato e confere o gtp5g.
+
+  # O gtp5g e' modulo de KERNEL: a exigencia e' por NO, nao por pod, e
+  # sem ele o pod do UPF sobe normalmente enquanto o plano de dados
+  # nunca passa a existir. Modulos de kernel nao sao namespaced, entao o
+  # /proc/modules lido de dentro do proprio pod do UPF ja' e' o do host
+  # -- da' para checar sem SSH.
+
+  # Os avisos de placement aqui nao derrubam o teste: o LBO continua
+  # funcionando como mecanismo. O que eles dizem e' se o numero de
+  # latencia vale alguma coisa.
+
+       ueransim     brix-porvir-02
+       i-upf        brix-porvir-05
+       mec-app      brix-porvir-05
+       psa-upf      petshopboys
+       remote-app   metallica
+       smf          petshopboys
+       amf          petshopboys
+  OK   placement fiel a Figura 3 do TG1: Edge Node em brix-porvir-05, Server Node em petshopboys, servico remoto em metallica
+  ..   i-upf @ brix-porvir-05: gtp5g carregado (OE)
+  ..   psa-upf @ petshopboys: gtp5g carregado (OE)
+  OK   gtp5g presente nos dois nos que hospedam UPF
+
+========================================================================
+[06] Assinantes no MongoDB
+========================================================================
+  # Grava os assinantes. No free5gc cada UE vira oito documentos
+  # espalhados por oito colecoes (autenticacao, dados provisionados,
+  # politica) -- nao existe uma colecao unica de subscribers como no
+  # Open5GS.
+
+  # Se o registro do UE falhar la' no passo 9, este e' o primeiro
+  # suspeito.
+
+  ..   abrindo port-forward svc/mongo 27017:27017
+       tenantId: 27930790-bc15-47b7-95e5-c443a1e98836
+       removidos 5 docs de subscriptionData.authenticationData.authenticationSubscription
+       removidos 5 docs de subscriptionData.authenticationData.webAuthenticationSubscription
+       removidos 5 docs de subscriptionData.provisionedData.amData
+       removidos 5 docs de subscriptionData.provisionedData.smData
+       removidos 5 docs de subscriptionData.provisionedData.smfSelectionSubscriptionData
+       removidos 5 docs de policyData.ues.amData
+       removidos 5 docs de policyData.ues.smData
+       removidos 5 docs de subscriptionData.identityData
+       inseridos 5 assinantes (imsi-208930000000000 .. imsi-208930000000004)
+       slice sst=1 sd=010203, dnn=internet, plmn=20893
+       40 documentos em 8 colecoes
+  OK   5 assinante(s) carregado(s)
+
+========================================================================
+[07] Associacao PFCP: o SMF precisa enxergar OS DOIS UPFs
+========================================================================
+  # Espera o SMF fechar associacao PFCP com o I-UPF e com o PSA-UPF.
+
+  # A prova e' o HEARTBEAT PFCP que cada UPF troca com o SMF: se ele
+  # esta' acontecendo agora, a associacao esta' de pe' agora. O marcador
+  # de boot nao serve -- ele sai uma vez e o log rotaciona.
+
+  # E' aqui que aparece nodeID errado: o UPF sobe, o SMF sobe, nenhum
+  # dos dois reclama, e a associacao simplesmente nunca fecha. Uma
+  # associacao so' (em vez de duas) tambem indica que o SMF esta com o
+  # config do cenario A.
+
+  OK   I-UPF e PSA-UPF associados ao SMF (heartbeat PFCP ativo nos dois)
+
+========================================================================
+[08] Tester UERANSIM (gNB + UE)
+========================================================================
+  # Confere que o tester esta no ar e que o gNB fechou NG Setup com a
+  # AMF.
+
+  # O numero de UEs vem do MANIFESTO, nao de scale em tempo de execucao:
+  # 'replicas' no StatefulSet e' quantos pods sobem e NUM_UE no
+  # container 'ue' e' quantos IMSIs cada pod registra. Para mudar, edite
+  # tester/ueransim.yaml e aplique de novo.
+
+  # Se o UE nao estiver registrado, o pod e' recriado aqui. Motivo: o
+  # tester sobe junto com o deploy, antes de o Mongo ter assinantes; ele
+  # leva 404 do UDR e o T3511 desiste na 5a tentativa. Passado isso o UE
+  # fica parado para sempre, mesmo com os assinantes ja' carregados -- e
+  # o log so' mostra CONGESTION.
+
+  ..   replicas definidas no manifesto: 1 (as medicoes usam o pod free5gc-ueransim-0)
+  OK   free5gc-ueransim-0 no ar (no brix-porvir-02)
+  OK   NG Setup com a AMF concluido
+  ..   tester (vr_client)     @ brix-porvir-02   rcvbuf=16384 kB sndbuf=16384 kB (pedidos 8192 kB)
+  ..   mec-app (vr_server)    @ brix-porvir-05   rcvbuf=16384 kB sndbuf=16384 kB (pedidos 8192 kB)
+  ..   remote-app (vr_server) @ metallica        rcvbuf=416 kB sndbuf=416 kB (pedidos 8192 kB)
+  AVISO buffer de socket abaixo do minimo (4096 kB) em 1 de 3 pontos:
+         remote-app (vr_server) @ metallica: 416 kB
+       O que estourar a fila vira 'perda' no relatorio sem ser perda do UPF -- e se sobrar so' de um lado, a comparacao entre os caminhos
+       cai por diferenca de perda, nao por diferenca de caminho. Rode NO NO (sao sysctl globais; o container nem os enxerga):
+         sudo sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216
+       Para nao perder no reboot, grave em /etc/sysctl.d/99-tg2-vr.conf. Nos nos do nucleo (petshopboys, metallica), onde
+       nao ha sudo, o jeito e' baixar o perfil de carga ate' os dois lados perderem igual.
+
+========================================================================
+[09] Sessao PDU: interface de tunel com IP do pool do PSA-UPF
+========================================================================
+  # Espera a interface de tunel do UE ganhar IP.
+
+  # O IP e' alocado pelo PSA-UPF (o I-UPF nao tem pool, por ser
+  # branching point), entao um endereco em 60.60.x.x ja' e' prova de que
+  # o caminho default gNB -> I-UPF -> N9 -> PSA-UPF fechou inteiro.
+
+  OK   uesimtun0 = 60.60.0.1
+
+========================================================================
+[10] Rota dos destinos por DENTRO do tunel do UE
+========================================================================
+  # Manda os dois destinos pela interface do tunel.
+
+  # Sem isso o trafego sai pela eth0 do pod, chega ao destino pela rede
+  # do Kubernetes e nao passa por UPF nenhum -- o teste mediria a rede
+  # do cluster e devolveria numeros excelentes e sem nenhum significado.
+
+  ..   ClusterIPs: mec-app=10.107.157.9 (dinamico; anunciado ao NEF pelo mec-af), remote-app=10.110.69.110
+  $ kubectl -n free5gc exec free5gc-ueransim-0 -c ue -- ip route replace 10.107.157.9/32 dev uesimtun0
+  $ kubectl -n free5gc exec free5gc-ueransim-0 -c ue -- ip route replace 10.110.69.110/32 dev uesimtun0
+       10.107.157.9 dev uesimtun0 scope link
+       10.110.69.110 dev uesimtun0 scope link
+  OK   mec-app e remote-app roteados pelo tunel
+
+========================================================================
+[11] PROVA DO LOCAL BREAKOUT (o teste que define o cenario B)
+========================================================================
+  # Gera trafego para o mec-app e depois para o remote-app, lendo os
+  # contadores da interface GTP dos dois UPFs antes e depois de cada
+  # corrida.
+
+  # A regra: sob trafego para o mec-app o PSA-UPF central tem que ficar
+  # PARADO; sob trafego para o remote-app ele tem que subir. O CONTRASTE
+  # e' a evidencia do breakout -- latencia menor, sozinha, nao prova
+  # nada (pode ser so' um destino mais perto).
+
+  # Leia a coluna do PSA-UPF: e' ela que decide. A do I-UPF conta so' o
+  # que ele DESENCAPSULA localmente, entao ela sobe no caminho do MEC
+  # (onde o pacote sai pela eth0) e fica em zero no caminho remoto, em
+  # que ele so' repassa GTP-U N3 -> N9 sem terminar o tunel. I-UPF
+  # zerado no remoto e' esperado, nao e' falha.
+
+  # Se o PSA-UPF acompanhar as duas corridas, o ULCL nao esta desviando
+  # nada e o trafego do MEC esta subindo para o nucleo como qualquer
+  # outro.
+
+  ..   gerando 10.0s de trafego para 10.107.157.9 (mec)
+  $ kubectl -n free5gc exec free5gc-ueransim-0 -c vr-client -- python3 /opt/vr/vr_client.py --server 10.107.157.9:9100 --bind 60.60.0.1 --duration 10.0 --warmup 1 --label prova-mec --pose-hz 120
+       mec     i-upf     rx=    1201 pkts /     0.19 MB   tx=   31800 pkts /    39.05 MB
+       mec     psa-upf   rx=       0 pkts /     0.00 MB   tx=       0 pkts /     0.00 MB
+
+  ..   gerando 10.0s de trafego para 10.110.69.110 (remoto)
+  $ kubectl -n free5gc exec free5gc-ueransim-0 -c vr-client -- python3 /opt/vr/vr_client.py --server 10.110.69.110:9100 --bind 60.60.0.1 --duration 10.0 --warmup 1 --label prova-remoto --pose-hz 120
+       remoto  i-upf     rx=       0 pkts /     0.00 MB   tx=       0 pkts /     0.00 MB
+       remoto  psa-upf   rx=    1201 pkts /     0.19 MB   tx=   31800 pkts /    39.05 MB
+
+  OK   LBO CONFIRMADO: PSA-UPF viu 0 pacotes do trafego MEC e 1201 do trafego remoto
+
+========================================================================
+[12] Campanha de medicao VR (60.0s por caminho)
+========================================================================
+  # Roda a carga VR de verdade contra os dois destinos, com o mesmo
+  # perfil.
+
+  # Reporta o net_rtt (ida do uplink + volta do downlink -- a parcela
+  # que o LBO realmente ataca) separado do m2p (motion-to-photon, o que
+  # o usuario sente e que inclui a espera pelo proximo frame). Reportar
+  # so' um dos dois engana: o m2p sozinho dilui o efeito, o net_rtt
+  # sozinho esconde a experiencia.
+
+  # A ordem dos dois caminhos ALTERNA a cada execucao, para que nenhuma
+  # deriva ao longo da execucao caia sempre no mesmo lado.
+
+  # Depois de medir, confere se a corrida MEDIU A REDE: se o gerador
+  # sustentou a cadencia, se ele conseguiu entregar todos os pacotes ao
+  # kernel, se o kernel do cliente nao descartou nada por fila cheia e
+  # se os dois caminhos perderam quantidades parecidas. Falhou qualquer
+  # um: o ponto e' sobre o testbed, nao sobre o UPF.
+
+  ..   ordem desta execucao: b-mec -> b-remoto
+  ..   b-mec: 60.0s contra 10.107.157.9
+  $ kubectl -n free5gc exec free5gc-ueransim-0 -c vr-client -- python3 /opt/vr/vr_client.py --server 10.107.157.9:9100 --bind 60.60.0.1 --duration 60.0 --warmup 5.0 --label b-mec --pose-hz 120 --csv /data/b-mec.csv --json /data/b-mec.json
+       net_rtt p50=1530.3 us  p95=2164.9 us | m2p p50=17704.5 us | hold p50=16204.0 us | perda=0.001% | dl=30.52 Mbps | continuidade=100.0%
+       caminho ue-tun: rx=190800 tx=7201   i-upf: rx=7201 tx=190800   psa-upf: rx=0 tx=2509433
+  ..   b-mec: 11 frames atrasados em 3600 (0.31%) -- dentro do ruido de escalonamento do no.
+  ..   b-remoto: 60.0s contra 10.110.69.110
+  $ kubectl -n free5gc exec free5gc-ueransim-0 -c vr-client -- python3 /opt/vr/vr_client.py --server 10.110.69.110:9100 --bind 60.60.0.1 --duration 60.0 --warmup 5.0 --label b-remoto --pose-hz 120 --csv /data/b-remoto.csv --json /data/b-remoto.json
+       net_rtt p50=2032.2 us  p95=4267.4 us | m2p p50=19061.8 us | hold p50=17089.0 us | perda=0.013% | dl=30.52 Mbps | continuidade=100.0%
+       caminho ue-tun: rx=190785 tx=7201   i-upf: rx=0 tx=0   psa-upf: rx=7201 tx=2683463
+
+========================================================================
+[13] Coleta dos resultados
+========================================================================
+  # Traz os CSV (uma linha por frame) e os JSON de resumo de dentro do
+  # pod para a maquina local, que e' o insumo dos graficos de
+  # distribuicao.
+
+  # Junto vai um resumo-completo.json com o que o cliente NAO sabe: os
+  # deltas dos contadores do servidor e a ordem em que os dois caminhos
+  # correram. O JSON que o proprio cliente escreve dentro do pod e'
+  # gravado antes disso existir, entao sozinho ele nao explica um
+  # descarte.
+
+  $ kubectl -n free5gc cp free5gc-ueransim-0:/data . -c vr-client
+  OK   5 arquivo(s) em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-50\cloud-gaming\rodada-24\b\cloud-gaming\run-01: b-mec.csv, b-mec.json, b-remoto.csv, b-remoto.json, resumo-completo.json
+
+  Prova do LBO: PSA-UPF viu 0 pkts sob trafego MEC e 1201 sob trafego remoto
+    caminho         net p50    net p95    m2p p50   hold p50   loss %  cont %    Mbps   fps  drops
+    b-mec            1530.3     2164.9    17704.5    16204.0     0.00   100.0   30.52    60      0
+    b-remoto         2032.2     4267.4    19061.8    17089.0     0.01   100.0   30.52    60      0
+    aplicacao fora (b-remoto - b-mec), net_rtt p50: 501.9 us (MEC 24.7% menor)
+
+  execucao 1 concluida em 178s -> C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-50\cloud-gaming\rodada-24\b\cloud-gaming\run-01
+
+========================================================================
+[99] RESUMO DA CAMPANHA - perfil 'cloud-gaming' (30 Mbps @ 60 fps, pose 120 Hz)
+========================================================================
+  1 execucao(oes) concluida(s), 0 falha(s), 0 com aviso de campanha
+
+    exec    net p50 mec  net p50 remoto   fora %  PSA sob MEC          status
+    1            1530.3          2032.2    24.7%            0              ok
+
+  KPIs de 1 execucao(oes) agregada(s) -- media +- desvio-padrao ENTRE execucoes:
+
+    KPI                                   MEC / LBO       Caminho remoto   Aplicacao fora (2 UPFs)
+    ----------------------------------------------------------------------------------------------
+    Atraso de rede (media)          1.509+-0.000 ms      2.279+-0.000 ms   0.770+-0.000 ms (33.8%)
+    Atraso de rede p50              1.530+-0.000 ms      2.032+-0.000 ms   0.502+-0.000 ms (24.7%)
+    Atraso de rede p95              2.165+-0.000 ms      4.267+-0.000 ms   2.102+-0.000 ms (49.3%)
+    Atraso de rede p99              3.328+-0.000 ms      6.631+-0.000 ms   3.303+-0.000 ms (49.8%)
+    Motion-to-photon (media)       17.744+-0.000 ms     19.281+-0.000 ms    1.536+-0.000 ms (8.0%)
+    Motion-to-photon p50           17.705+-0.000 ms     19.062+-0.000 ms    1.357+-0.000 ms (7.1%)
+    Motion-to-photon p95           18.121+-0.000 ms     20.681+-0.000 ms   2.560+-0.000 ms (12.4%)
+    Jitter de rede                    271.4+-0.0 us        557.4+-0.0 us     286.0+-0.0 us (51.3%)
+    Jitter motion-to-photon           233.5+-0.0 us        540.9+-0.0 us     307.4+-0.0 us (56.8%)
+    Tempo no servidor p50          16.204+-0.000 ms     17.089+-0.000 ms                         -
+    Perda de pacotes DL              0.001+-0.000 %       0.013+-0.000 %    0.012+-0.000 % (92.1%)
+    Continuidade do DL                99.96+-0.00 %        99.99+-0.00 %                         -
+    Frames incompletos               0.028+-0.000 %       0.222+-0.000 %    0.194+-0.000 % (87.4%)
+    Vazao DL                       30.52+-0.00 Mbps     30.52+-0.00 Mbps                         -
+
+    Aplicacao fora = remoto - MEC, pareada: diferenca calculada dentro de cada execucao, depois agregada.
+
+  Arquivos em C:\Users\carlo\OneDrive\Documentos\UFRGS\TG2-main\implementacoes\free5gc\resultados-a-vs-b-ruido-gtp\fundo-50\cloud-gaming\rodada-24\b\cloud-gaming:
+    tabela-kpis.md
+    resumo-por-execucao.csv
+    kpis-agregados.csv
+    campanha.json
+
+  A tabela pronta para o texto esta' em tabela-kpis.md; os dados por execucao, em resumo-por-execucao.csv.
+
+CENARIO B VALIDADO -- 1 execucao(oes) em 1 cenario(s), 180s

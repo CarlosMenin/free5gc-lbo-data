@@ -1,0 +1,10 @@
+{
+  "nivel": 80,
+  "capacidade_mbps": 891.1358208986554,
+  "pedido_mbps": 712.9086567189244,
+  "ligado": false,
+  "vezes_ligado": 0,
+  "capacidade_medidas": [
+    891.1
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "a-mec": {
+    "label": "a-mec",
+    "server": "10.107.157.9:9100",
+    "bind": "60.60.0.1",
+    "duration_s": 60.5,
+    "ul_window_s": 60.0,
+    "warmup_s": 5.0,
+    "pose_hz": 200.0,
+    "frames_complete": 3554,
+    "frames_partial": 46,
+    "dl_packets_rx_run": 75503,
+    "frames_incomplete_pct": 1.278,
+    "frames_in_stats": 3254,
+    "dl_packet_loss_pct": 0.14,
+    "dl_throughput_mbps": 12.079,
+    "dl_continuity_pct": 99.99,
+    "ul_packets_tx": 12000,
+    "ul_pose_hz_real": 200.0,
+    "ul_throughput_mbps": 0.205,
+    "janela": {
+      "inicio_s": 5.0,
+      "nominal_s": 55.0,
+      "span_s": 54.993,
+      "frames_esperados": 3300,
+      "dl_packets_rx": 69203,
+      "dl_packets_esperados": 69300
+    },
+    "m2p_us": {
+      "min": 14312.8,
+      "p50": 17603.65,
+      "p95": 19773.905,
+      "p99": 22601.824999999997,
+      "max": 27380.1,
+      "mean": 17813.9
+    },
+    "net_rtt_us": {
+      "min": 1087.0,
+      "p50": 2158.25,
+      "p95": 4624.17,
+      "p99": 6327.441,
+      "max": 8653.2,
+      "mean": 2424.2
+    },
+    "hold_us": {
+      "min": 12289.0,
+      "p50": 15503.0,
+      "p95": 17210.0,
+      "max": 23215.0,
+      "mean": 15389.8
+    },
+    "jitter_us": 2193.0,
+    "jitter_net_us": 311.8,
+    "saude": {
+      "rx_timestamp_kernel": true,
+      "sock_rcvbuf_bytes": 16777216,
+      "dl_sock_drops": 0,
+      "dl_sock_overflow_pkts": null,
+      "dl_sock_overflow_run": null,
+      "udp_rcvbuf_errors": 0,
+      "udp_in_errors": 0,
+      "ctxt_switches_involuntary": 181,
+      "clock_drift_us": 7.5
+    },
+    "_gtp": {
+      "upf": {
+        "rx_bytes": 1872759,
+        "rx_pkts": 12012,
+        "tx_bytes": 6545399608,
+        "tx_pkts": 4737867
+      },
+      "ue-tun": {
+        "rx_bytes": 92722596,
+        "rx_pkts": 75507,
+        "tx_bytes": 1872104,
+        "tx_pkts": 12002
+      }
+    },
+    "_ordem": 1,
+    "_srv": {
+      "frames_sent_total": 3600.0,
+      "frame_packets_total": 75600.0,
+      "frames_late_total": 0.0,
+      "frames_truncated_total": 0.0,
+      "send_dropped_total": 0.0,
+      "pose_packets_total": 11984.0,
+      "sessions_expired_total": 0.0,
+      "pace_window_seconds": 0.012121,
+      "sndbuf_bytes": 16777216.0
+    },
+    "_fps_servidor": 60.0,
+    "dl_packet_loss_srv_pct": 0.1283
+  }
+}

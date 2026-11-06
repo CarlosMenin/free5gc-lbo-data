@@ -1,0 +1,30 @@
+CALIBRACAO DO INSTRUMENTO -- perfil vr-extremo, 5 repeticoes de 60s (warmup 5s)
+placement: {"ueransim": "brix-porvir-02", "i-upf": "brix-porvir-05", "mec-app": "brix-porvir-05", "psa-upf": "petshopboys", "remote-app": "metallica", "smf": "petshopboys", "amf": "petshopboys"}
+
+1. ESCADA DE CONTROLE  (net_rtt em us; mediana entre repeticoes [min-max])
+   degrau      validas  net min               net p50  desvio  net p99  jitter  perda %   Mbps
+   C0-tester     5/5         14            64 [63-66]       1      113      16    0.009 100.21
+   C0-borda      5/5         14            22 [21-22]       0       39       3    0.004 100.20
+   C0-nucleo     5/5         11            19 [19-20]       0       38       3    0.002 100.20
+   C1-borda      5/5        150         464 [458-475]       7      685      78    0.006 100.22
+   C1-nucleo     5/5        274         454 [450-459]       3     1066      68    0.005 100.21
+   C2-borda      5/5        422         594 [572-602]      11     2565     170    0.888  99.23
+   C2-nucleo     5/5       1124      1879 [1836-1951]      43     8138    1659    0.895  99.23
+
+2. DECOMPOSICAO DO net_rtt p50  (us)
+   piso do instrumento (maior C0): 64   por maquina: C0-tester=64, C0-borda=22, C0-nucleo=19
+   caminho    C1 rede s/ 5G     C2 5G   rede - piso   5G (C2-C1)
+   borda                464       594           400          130
+   nucleo               454      1879           390         1425
+
+3. RUIDO x EFEITO
+   aplicacao fora (2 UPFs) no net_rtt p50 (C2-nucleo - C2-borda): 1285 us
+   (nao e' o ganho do LBO: este sai de a-mec x b-mec, em campanha-a-vs-b.py)
+   desvio entre repeticoes: borda 11 us, nucleo 43 us
+   menor diferenca detectavel (alfa 5%, poder 80%, t de Student, gl de Welch = 4.5): 75 us -> efeito = 17.2x essa diferenca
+   ruido do proprio instrumento (desvio do p50 em C0-tester): 1 us
+
+4. VALIDACOES DE EXATIDAO
+   V1 sleep no servidor -> net_rtt parado OK
+   V2 netem -> net_rtt 1:1            OK
+   V3 ping simultaneo (testemunha)    OK

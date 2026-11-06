@@ -1,0 +1,15 @@
+kpi,unidade,mec_media,mec_desvio,remoto_media,remoto_desvio,ganho_pareado_media,ganho_pareado_desvio,ganho_pct,n_execucoes
+"Atraso de rede (media)",ms,2.579500,0.000000,,,,,,1
+"Atraso de rede p50",ms,2.514250,0.000000,,,,,,1
+"Atraso de rede p95",ms,3.594225,0.000000,,,,,,1
+"Atraso de rede p99",ms,5.296598,0.000000,,,,,,1
+"Motion-to-photon (media)",ms,18.649500,0.000000,,,,,,1
+"Motion-to-photon p50",ms,18.568600,0.000000,,,,,,1
+"Motion-to-photon p95",ms,19.272290,0.000000,,,,,,1
+"Jitter de rede",us,544.100000,0.000000,,,,,,1
+"Jitter motion-to-photon",us,388.100000,0.000000,,,,,,1
+"Tempo no servidor p50",ms,16.063000,0.000000,,,,,,1
+"Perda de pacotes DL",%,0.101600,0.000000,,,,,,1
+"Continuidade do DL",%,99.970000,0.000000,,,,,,1
+"Frames incompletos",%,0.861000,0.000000,,,,,,1
+"Vazao DL",Mbps,25.321000,0.000000,,,,,,1
