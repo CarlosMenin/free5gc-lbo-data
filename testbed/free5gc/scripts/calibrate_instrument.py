@@ -196,7 +196,7 @@ def stop_cal_server():
                    timeout=30).stdout.split()
 
 
-def start_cal_server(prof, render_ms=0.0, render_sleep=False):
+def start_cal_server(profile, render_ms=0.0, render_sleep=False):
     """Starts a vr-server on 127.0.0.1 with the SAME profile as the campaign and returns
     the startup log (from which comes the pacing slack used by V1).
 
@@ -205,13 +205,13 @@ def start_cal_server(prof, render_ms=0.0, render_sleep=False):
     unknown flag would crash the server with an argparse error. V1 checks
     whether the variable was obeyed, by reading the banner of the log."""
     stop_cal_server()
-    p = tcb.PROFILES[prof]
+    p = tcb.PROFILES[profile]
     line = (f"VR_RENDER_SLEEP={1 if render_sleep else 0} "
              f"nohup python3 -u /opt/vr/vr_server.py --bind 127.0.0.1 "
              f"--port {CAL_PORT} --metrics-port {CAL_METRICS} "
              f"--bitrate-mbps {p['bitrate_mbps']} --fps {p['fps']} "
              f"--mtu {p['mtu']} --render-ms {render_ms} "
-             f"--role calibration --profile {prof} "
+             f"--role calibration --profile {profile} "
              "</dev/null >/tmp/cal-server.log 2>&1 &")
     r = exec_in(CLI, "sh", "-c", line, timeout=30)
     if r.returncode != 0:
@@ -238,13 +238,13 @@ def slack_ms(log, fps):
 # --------------------------------------------------------------------------
 def client_side(where, srv_side, bind, tag, args, csv=None):
     cmd = ["python3", "/opt/vr/vr_client.py", "--server", srv_side,
-           "--bind", bind, "--duration", str(args.dur),
+           "--bind", bind, "--duration", str(args.duration),
            "--warmup", str(args.warmup),
-           "--pose-hz", str(tcb.PROFILES[args.prof]["pose_hz"]),
+           "--pose-hz", str(tcb.PROFILES[args.profile]["pose_hz"]),
            "--label", tag]
     if csv:
         cmd += ["--csv", csv]
-    r = exec_in(where, *cmd, timeout=args.dur + 90)
+    r = exec_in(where, *cmd, timeout=args.duration + 90)
     try:
         b = r.stdout
         return json.loads(b[b.index("{"):b.rindex("}") + 1])
@@ -421,7 +421,7 @@ def measure_or_record(name_str, *a, **kw):
 # --------------------------------------------------------------------------
 def ladder(args, ctx, records):
     fps_mec, fps_rem = tcb.target_fps("free5gc-mec-app"), tcb.target_fps("free5gc-remote-app")
-    fps_cal = tcb.PROFILES[args.prof]["fps"]
+    fps_cal = tcb.PROFILES[args.profile]["fps"]
     loop_cal, loop_srv = f"127.0.0.1:{CAL_PORT}", f"127.0.0.1:{tcb.VR_PORT}"
     ladder_steps = [
         ("C0-tester", "no-5g", CLI, loop_cal, "127.0.0.1", CLI, CAL_METRICS, fps_cal),
@@ -440,7 +440,7 @@ def ladder(args, ctx, records):
              ctx["ue_ip"], REM, SRV_METRICS, fps_rem),
         ]
     stage("C", f"Control ladder: {len(ladder_steps)} steps x {args.repetitions} "
-               f"repetitions, {args.dur:g}s each",
+               f"repetitions, {args.duration:g}s each",
           """C0 removes the whole network (loopback in the pod itself), C1 adds back the
     cluster network without any UPF, C2 is the 5G path of the campaign. The difference
     between neighboring steps gives an owner to each part of the delay.
@@ -458,7 +458,7 @@ def ladder(args, ctx, records):
             tag = f"{name_str}-r{rep + 1}"
             csv = remote_csv(cli, tag)
             if name_str == "C0-tester":
-                start_cal_server(args.prof, 0)
+                start_cal_server(args.profile, 0)
             try:
                 reg = measure_or_record(name_str, expected, cli, tgt, bind, srv, port_num,
                                        fps, args, tag=tag, csv=csv)
@@ -560,8 +560,8 @@ def v1_render(args, records):
 
     The sleep values come from the slack that the pacing leaves in the period:
     above it the generator falls behind, and the validation would measure the generator.""")
-    fps = tcb.PROFILES[args.prof]["fps"]
-    log = start_cal_server(args.prof, 0, render_sleep=True)
+    fps = tcb.PROFILES[args.profile]["fps"]
+    log = start_cal_server(args.profile, 0, render_sleep=True)
     if "[sleep]" not in log:
         warning("vr-server ignored VR_RENDER_SLEEP: the vr-app ConfigMap of the "
               "cluster predates this version. Apply "
@@ -575,7 +575,7 @@ def v1_render(args, records):
     points = []
     try:
         for R in renders:
-            start_cal_server(args.prof, R, render_sleep=True)
+            start_cal_server(args.profile, R, render_sleep=True)
             tag = f"V1-render-{R:g}ms"
             csv = remote_csv(CLI, tag)
             reg = measure_or_record("V1", "no-5g", CLI, f"127.0.0.1:{CAL_PORT}",
@@ -706,11 +706,11 @@ def v2_netem(args, records):
               f"from this calibration ({current.strip()[:80]}). Not overwriting it.",
               scope="calibration")
         return {"executed": False, "reason": "foreign qdisc on the loopback"}
-    fps = tcb.PROFILES[args.prof]["fps"]
+    fps = tcb.PROFILES[args.profile]["fps"]
     delays = args.delay_ms or [0.0, 1.0, 2.0, 5.0]
     points = []
     try:
-        start_cal_server(args.prof, 0)
+        start_cal_server(args.profile, 0)
         for D in delays:
             err = apply_netem(c, D)
             if err:
@@ -805,7 +805,7 @@ def v3_ping(args, ctx, ag, records):
     # With the default ping of 84 B the comparison mixed serialization delay
     # -- ~10 us per store-and-forward hop for each 1228 B on 1 GbE -- with
     # the overhead of the instrument. The IP+ICMP and IP+UDP headers are equal (28 B).
-    ping_size = (128 + tcb.PROFILES[args.prof]["mtu"]) // 2
+    ping_size = (128 + tcb.PROFILES[args.profile]["mtu"]) // 2
     info(f"ping with {ping_size} B of payload: same bytes per round trip as "
          f"pose + frame packet")
     fps = {"edge": tcb.target_fps("free5gc-mec-app"),
@@ -814,7 +814,7 @@ def v3_ping(args, ctx, ag, records):
     outcome, consistent = {}, True
     for which_side, ip, srv in targets:
         filename, pidf = f"/tmp/v3-ping-{which_side}.txt", f"/tmp/v3-ping-{which_side}.pid"
-        due = int(args.dur + 60)      # safety ceiling; the normal end is SIGINT
+        due = int(args.duration + 60)      # safety ceiling; the normal end is SIGINT
         tcb.kexec(tcb.TESTER_POD, c, "sh", "-c",
                   f"ping -D -s {ping_size} -i 0.02 -w {due} {ip} </dev/null >{filename} 2>&1 & "
                   f"echo $! >{pidf}", check=True, quiet=True, timeout=30)
@@ -890,8 +890,8 @@ def v3_ping(args, ctx, ag, records):
 # --------------------------------------------------------------------------
 def report(args, ctx, placement, ag, v1, v2, v3):
     L = []
-    L.append(f"CALIBRATION OF THE INSTRUMENT -- profile {args.prof}, "
-             f"{args.repetitions} repetitions of {args.dur:g}s (warm-up {args.warmup:g}s)")
+    L.append(f"CALIBRATION OF THE INSTRUMENT -- profile {args.profile}, "
+             f"{args.repetitions} repetitions of {args.duration:g}s (warm-up {args.warmup:g}s)")
     L.append(f"placement: {json.dumps(placement)}")
     L.append("")
     L.append("1. CONTROL LADDER  (net_rtt in us; median across repetitions [min-max])")
@@ -998,13 +998,13 @@ def main():
     tcb.NS, tcb.CONCISE, tcb.PAUSE = args.namespace, args.concise, False
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     args.output = args.output or os.path.join(tcb.BASE, "calibration",
-                                            f"{stamp}-{args.prof}")
+                                            f"{stamp}-{args.profile}")
     # Namespace with the fields that steps 01-10 of the test of Scenario B read.
     targs = argparse.Namespace(
         attempts=1, repetitions=1, deploy=args.deploy, include_discarded=False,
         no_teardown=True, teardown_timeout=300,
-        load_subscribers=args.load_subscribers, dur=args.dur,
-        warmup=args.warmup, proof_duration=10, proof_only=False, prof=args.prof,
+        load_subscribers=args.load_subscribers, duration=args.duration,
+        warmup=args.warmup, proof_duration=10, proof_only=False, profile=args.profile,
         list_profiles=False, output=args.output, timeout=args.timeout,
         mongo_port=args.mongo_port, namespace=args.namespace,
         skip_validate=False, step_by_step=False, concise=args.concise)

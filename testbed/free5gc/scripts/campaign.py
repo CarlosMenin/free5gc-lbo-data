@@ -336,13 +336,13 @@ def background_mode(backgrounds):
     return "gtp" if modes == {"gtp"} else ("direct" if modes <= {"direct"} else "mixed")
 
 
-def level_root(output, prof, level, legacy):
+def level_root(output, profile, level, legacy):
     """With --background 0 the campaign writes where it always did. With levels, each one
     gets <output>/<level>/<profile>/ -- the name of the last folder is still the
     profile, from which --compare-only takes the profile."""
     if legacy:
-        return os.path.join(output, prof)
-    return os.path.join(output, level_name(level), prof)
+        return os.path.join(output, profile)
+    return os.path.join(output, level_name(level), profile)
 
 
 # --------------------------------------------------------------------------
@@ -515,7 +515,7 @@ def recorded_capacities(output):
     return caps
 
 
-def round_capacity(output, prof, levels, n):
+def round_capacity(output, profile, levels, n):
     """(capacity, measurements) already recorded in this round by a valid execution,
     or (None, None). On a resume, what is missing from the round uses the SAME capacity
     -- and therefore the same background in Mbps -- as the rest of the pair."""
@@ -523,7 +523,7 @@ def round_capacity(output, prof, levels, n):
         if not nv:
             continue
         for scen in ("a", "b"):
-            f = os.path.join(round_folder(level_root(output, prof, nv, False), n), scen, "background.json")
+            f = os.path.join(round_folder(level_root(output, profile, nv, False), n), scen, "background.json")
             if not os.path.exists(f):
                 continue
             try:
@@ -683,14 +683,14 @@ def remote_only_guard(msg):
     return msg.startswith(("a-remote:", "b-remote:", "loss very different between the paths"))
 
 
-def load_run(scenario_folder, prof, level=0):
+def load_run(scenario_folder, profile, level=0):
     """The execution recorded by one of the scripts, or None if it did not complete.
 
     _valid           holds for A x B: no campaign guard about the
                      MEC path and, with background, the background really applied
     _valid_remote    also holds for b-remote x b-mec: no campaign
                      guard, including those of the remote path"""
-    p = os.path.join(scenario_folder, prof, "run.json")
+    p = os.path.join(scenario_folder, profile, "run.json")
     if not os.path.exists(p):
         return None
     with open(p, encoding="utf-8") as fh:
@@ -738,12 +738,12 @@ def tear_down(scen):
     test_module(scen).teardown(argparse.Namespace(teardown_timeout=300))
 
 
-def run_scenario(scen, folder, args, prof, deploy=True, no_teardown=False, background=None):
+def run_scenario(scen, folder, args, profile, deploy=True, no_teardown=False, background=None):
     # The remote path only in B (--with-remote): a-remote enters no comparison.
     path_names = "all" if args.with_remote and scen == "b" else "mec"
     cmd = [sys.executable, "-u", SCRIPTS[scen], "--repetitions", "1",
-           "--profile", prof, "--output", folder,
-           "--duration", str(args.dur), "--warmup", str(args.warmup),
+           "--profile", profile, "--output", folder,
+           "--duration", str(args.duration), "--warmup", str(args.warmup),
            "--proof-duration", str(args.proof_duration),
            "--attempts", str(args.attempts), "--timeout", str(args.timeout),
            "--path-names", path_names]
@@ -854,7 +854,7 @@ def discard(folder, reason):
     return destination
 
 
-def infra_failure(folder, prof, level):
+def infra_failure(folder, profile, level):
     """Reason to repeat the execution, or None.
 
     Only INFRASTRUCTURE failures: the execution did not complete (deployment, PFCP, PDU
@@ -863,7 +863,7 @@ def infra_failure(folder, prof, level):
     fell on a quality guard -- loss, pose, background that crossed less than 90% because
     the link was saturated -- stays as it is: repeating until it passes would select
     the good rounds and bias the comparison."""
-    if load_run(folder, prof) is None:
+    if load_run(folder, profile) is None:
         return "the execution did not complete"
     if level:
         fj = None
@@ -879,7 +879,7 @@ def infra_failure(folder, prof, level):
     return None
 
 
-def mismatched_csv(folder, prof, e):
+def mismatched_csv(folder, profile, e):
     """Paths whose per-frame CSV is missing or is not from THIS execution: vr_client
     writes one line per complete frame, so the lines must be exactly the
     frames_complete of the summary. An old CSV left in /data of the tester also
@@ -887,7 +887,7 @@ def mismatched_csv(folder, prof, e):
     bad = []
     for name_str, summ in sorted((e.get("campaign") or {}).items()):
         n = None
-        for csvf in sorted(glob.glob(os.path.join(folder, prof, "run-*", name_str + ".csv"))):
+        for csvf in sorted(glob.glob(os.path.join(folder, profile, "run-*", name_str + ".csv"))):
             with open(csvf, encoding="utf-8", errors="replace") as fh:
                 n = sum(1 for _ in fh) - 1
         if n is None or n != summ.get("frames_complete"):
@@ -895,11 +895,11 @@ def mismatched_csv(folder, prof, e):
     return bad
 
 
-def copy_csv(scen, folder, prof):
+def copy_csv(scen, folder, profile):
     """Copies /data of the tester again, which is still running (--no-teardown).
     Relative destination for the same reason as the test: the "C:" of Windows."""
-    runs = sorted(glob.glob(os.path.join(folder, prof, "run-*")))
-    destination = runs[-1] if runs else os.path.join(folder, prof, "run-01")
+    runs = sorted(glob.glob(os.path.join(folder, profile, "run-*")))
+    destination = runs[-1] if runs else os.path.join(folder, profile, "run-01")
     os.makedirs(destination, exist_ok=True)
     try:
         r = subprocess.run(["kubectl", "-n", NS, "cp", f"{test_module(scen).TESTER_POD}:/data", ".",
@@ -910,11 +910,11 @@ def copy_csv(scen, folder, prof):
     return (r.stderr or r.stdout).strip()[:200] if r.returncode else ""
 
 
-def check_instrument(scen, folder, prof, can_copy):
+def check_instrument(scen, folder, profile, can_copy):
     """SYSTEMATIC problems of the instrument in an execution that completed ([] if
     none). In an earlier campaign, kubectl cp failed in all 898 executions and
     nobody noticed, because it was one warning among dozens."""
-    e = load_run(folder, prof)
+    e = load_run(folder, profile)
     if e is None:
         return []
     t = test_module(scen)
@@ -931,14 +931,14 @@ def check_instrument(scen, folder, prof, can_copy):
         if health.get("rx_timestamp_kernel") is False:
             problems.append(f"{name_str}: no kernel timestamp in vr_client; the latency "
                              "now includes the time the client spent off the CPU")
-    bad, err = mismatched_csv(folder, prof, e), ""
+    bad, err = mismatched_csv(folder, profile, e), ""
     for attempt in range(1, 3 if can_copy else 1):
         if not bad:
             break
         print(f"    {YELLOW}{scen.upper()} per-frame CSV missing or from another execution "
               f"({', '.join(bad)}); copying again from the tester (attempt {attempt}){RESET}")
-        err = copy_csv(scen, folder, prof)
-        bad = mismatched_csv(folder, prof, e)
+        err = copy_csv(scen, folder, profile)
+        bad = mismatched_csv(folder, profile, e)
     if bad:
         problems.append(f"the per-frame CSV of {', '.join(bad)} did not come from the tester"
                          + (f" (kubectl cp: {err})" if err else "")
@@ -946,25 +946,25 @@ def check_instrument(scen, folder, prof, can_copy):
     return problems
 
 
-def run_checked(scen, folder, args, prof, nv, repeat, **kw):
+def run_checked(scen, folder, args, profile, nv, repeat, **kw):
     """Runs an execution and checks it. Returns (rc, last, reason): reason is the
     infrastructure failure that asks for a repetition (None if there is none). A problem
     of the instrument discards the execution and stops the campaign (InstrumentError)."""
     if os.path.isdir(folder):
         # Previous attempt (infrastructure failure, or --redo): no
         # mixing files of two executions in the same folder.
-        stale = infra_failure(folder, prof, nv)
+        stale = infra_failure(folder, profile, nv)
         destination = discard(folder, "failed" if stale else "redone")
         print(f"    {GREY}{scen.upper()} {level_name(nv)}: previous attempt kept in "
               f"{os.path.basename(destination)}{' (' + stale + ')' if stale else ''}{RESET}")
     t0 = time.time()
-    rc, last_ = run_scenario(scen, folder, args, prof, **kw)
+    rc, last_ = run_scenario(scen, folder, args, profile, **kw)
     color = GREEN if rc == 0 else RED
     print(f"    {color}{scen.upper()} {level_name(nv)} finished (rc={rc}) in "
           f"{time.time() - t0:.0f}s{RESET}: {last_}")
-    reason = infra_failure(folder, prof, nv)
+    reason = infra_failure(folder, profile, nv)
     if reason is None:
-        problems = check_instrument(scen, folder, prof, can_copy=kw.get("no_teardown", False))
+        problems = check_instrument(scen, folder, profile, can_copy=kw.get("no_teardown", False))
         if problems:
             destination = discard(folder, "instrument")
             raise InstrumentError(f"{scen.upper()} {level_name(nv)} in {folder}:\n  - "
@@ -974,7 +974,7 @@ def run_checked(scen, folder, args, prof, nv, repeat, **kw):
         # folder = <root of the level>/round-NN/<scen>
         m = re.match(r"round-(\d+)$", os.path.basename(os.path.dirname(folder)))
         if nv == 0 and m:
-            baseline_alert(os.path.dirname(os.path.dirname(folder)), prof,
+            baseline_alert(os.path.dirname(os.path.dirname(folder)), profile,
                                  int(m.group(1)), scen)
         return rc, last_, None
     if repeat:
@@ -987,7 +987,7 @@ def run_checked(scen, folder, args, prof, nv, repeat, **kw):
     return rc, last_, None
 
 
-def baseline_alert(root, prof, n, scen, band=0.25):
+def baseline_alert(root, profile, n, scen, band=0.25):
     """LIVE sentinel: the p50 without background of this round against the median of the
     previous rounds of the same scenario. An external defect (a-mec 5 to 20x slower)
     was once only seen later; here it shows up at once."""
@@ -995,7 +995,7 @@ def baseline_alert(root, prof, n, scen, band=0.25):
     vs = {}
     for d in glob.glob(os.path.join(root, "round-*")):
         m = re.match(r"round-(\d+)$", os.path.basename(d))
-        e = load_run(os.path.join(d, scen), prof) if m else None
+        e = load_run(os.path.join(d, scen), profile) if m else None
         v = val_(camp(e, pname), ("net_rtt_us", "p50")) if e and e["_valid"] else None
         if v is not None:
             vs[int(m.group(1))] = v / 1000
@@ -1029,36 +1029,36 @@ def prepare_background(args, levels, legacy, profiles):
     return start_iperf(args.timeout)
 
 
-def rounds(args, output, levels, legacy, prof, ip_srv):
+def rounds(args, output, levels, legacy, profile, ip_srv):
     for n in range(args.first_round, args.rounds + 1):
         order = ("a", "b") if n % 2 else ("b", "a")
         k = (n - 1) % len(levels)
         level_order = levels[k:] + levels[:k]
-        print(f"\n{'#' * 72}\n# {prof} -- ROUND {n} of {args.rounds}: "
+        print(f"\n{'#' * 72}\n# {profile} -- ROUND {n} of {args.rounds}: "
               f"{order[0].upper()} -> {order[1].upper()}"
               + ("" if legacy else "   levels: " + " -> ".join(level_name(x) for x in level_order))
               + f"\n{'#' * 72}")
         cap, measures = None, None
         for scen in order:
             def folder(nv):
-                return os.path.join(round_folder(level_root(output, prof, nv, legacy), n), scen)
+                return os.path.join(round_folder(level_root(output, profile, nv, legacy), n), scen)
             # Pending: never measured, or measured with an infrastructure failure (did not
             # complete, background not applied) -- including from an earlier time when the
             # command ran. The old attempt is kept, not deleted.
             pending = [nv for nv in level_order
-                         if args.redo or infra_failure(folder(nv), prof, nv) is not None]
+                         if args.redo or infra_failure(folder(nv), profile, nv) is not None]
             if not pending:
                 print(f"    {scen.upper()} already measured in this round; skipping")
                 continue
             if legacy:
                 # The usual campaign: comes up from zero, measures, tears down (hence
                 # the CSV cannot be copied again afterwards).
-                _, _, reason = run_checked(scen, folder(0), args, prof, 0, args.retry_failures)
+                _, _, reason = run_checked(scen, folder(0), args, profile, 0, args.retry_failures)
                 if reason:
-                    run_checked(scen, folder(0), args, prof, 0, False)
+                    run_checked(scen, folder(0), args, profile, 0, False)
                 continue
             if cap is None and any(pending):
-                cap, measures = round_capacity(output, prof, levels, n)
+                cap, measures = round_capacity(output, profile, levels, n)
                 if cap:
                     print(f"    capacity of this round, already recorded: {cap:.0f} Mbps (resume)")
                 else:
@@ -1082,7 +1082,7 @@ def rounds(args, output, levels, legacy, prof, ip_srv):
                     repeat = args.retry_failures and nv not in repeated
                     ar_node = True
                     rc, last_, reason = run_checked(
-                        scen, folder(nv), args, prof, nv, repeat,
+                        scen, folder(nv), args, profile, nv, repeat,
                         deploy=needs_deploy, no_teardown=True, background=background)
                     # An execution that failed may have left the scenario broken: the
                     # next level comes up from zero instead of inheriting the state.
@@ -1098,14 +1098,14 @@ def rounds(args, output, levels, legacy, prof, ip_srv):
 # --------------------------------------------------------------------------
 # comparison of one level
 # --------------------------------------------------------------------------
-def compare(root, prof, level=0):
+def compare(root, profile, level=0):
     nums = sorted(int(m.group(1)) for d in os.listdir(root)
                   if (m := re.match(r"round-(\d+)$", d)))
     lines = []
     for n in nums:
         pr = round_folder(root, n)
-        a = load_run(os.path.join(pr, "a"), prof, level)
-        b = load_run(os.path.join(pr, "b"), prof, level)
+        a = load_run(os.path.join(pr, "a"), profile, level)
+        b = load_run(os.path.join(pr, "b"), profile, level)
         lines.append({"round": n, "order": "A>B" if n % 2 else "B>A", "a": a, "b": b,
                        "pair_valid": bool(a and b and a["_valid"] and b["_valid"])})
     if not lines:
@@ -1231,7 +1231,7 @@ def legacy_args(args, level):
     return level == 0 and getattr(args, "_legacy", True)
 
 
-def emit(root, prof, res, args, level=0):
+def emit(root, profile, res, args, level=0):
     lines = res["lines"]
     n_pairs = sum(1 for r in lines if r["pair_valid"])
     workload = next((r[c]["_workload"] for r in lines for c in ("a", "b") if r[c] and r[c].get("_workload")), None)
@@ -1241,7 +1241,7 @@ def emit(root, prof, res, args, level=0):
     remote_only = sum(1 for r in lines for e in (r["a"], r["b"])
                     if e and e["_valid"] and not e["_valid_remote"])
     with open(os.path.join(root, "a-vs-b.md"), "w", encoding="utf-8") as fh:
-        fh.write(f"# A x B campaign - profile `{prof}`"
+        fh.write(f"# A x B campaign - profile `{profile}`"
                  + ("" if not level else f" - backhaul with background at {level}%") + "\n\n")
         if workload:
             fh.write(f"**Load:** {workload['bitrate_mbps']} Mbps @ {workload['fps']} fps (downlink), "
@@ -1366,7 +1366,7 @@ def emit(root, prof, res, args, level=0):
             w.writerow(row)
 
     with open(os.path.join(root, "a-vs-b.json"), "w", encoding="utf-8") as fh:
-        json.dump({"profile": prof, "background_level_pct": level, "rounds": len(lines),
+        json.dump({"profile": profile, "background_level_pct": level, "rounds": len(lines),
                    "valid_pairs": n_pairs,
                    "primary": res["primary"], "secondary": res["secondary"],
                    "per_round": [{"round": r["round"], "order": r["order"],
@@ -1464,8 +1464,8 @@ def cell_p(d, decimals, with_ci=False):
     return s
 
 
-def emit_highlight(output, prof, per_level, levels, dest):
-    name_str = f"lbo-under-congestion-{prof}"
+def emit_highlight(output, profile, per_level, levels, dest):
+    name_str = f"lbo-under-congestion-{profile}"
     all_items = [r for nv in levels if per_level.get(nv) for r in per_level[nv]["lines"]]
     workload = next((e["_workload"] for r in all_items for e in (r["a"], r["b"]) if e and e.get("_workload")), None)
     backgrounds = [e["_background"] for r in all_items for e in (r["a"], r["b"]) if e and e.get("_background")]
@@ -1474,7 +1474,7 @@ def emit_highlight(output, prof, per_level, levels, dest):
     mode_ = background_mode(backgrounds)
 
     with open(os.path.join(output, name_str + ".md"), "w", encoding="utf-8") as fh:
-        fh.write(f"# Local breakout under backhaul congestion - profile `{prof}`\n\n")
+        fh.write(f"# Local breakout under backhaul congestion - profile `{profile}`\n\n")
         fh.write("**The question.** In the centralized scenario (A), the traffic of the MEC application leaves "
                  "the edge, goes to the UPF in the core and comes back: it crosses the core -> edge link "
                  "**twice**. With local breakout (B), it leaves at the edge itself and crosses it "
@@ -1538,7 +1538,7 @@ def emit_highlight(output, prof, per_level, levels, dest):
             fh.write(f"| {level_label(nv)} | {len(res['lines'])} | "
                      f"{sum(1 for r in res['lines'] if r['pair_valid'])} | "
                      f"{cell_k(req, 0) if nv else '-'} | {cell_k(raw_text, 0) if nv else '-'} |\n")
-        fh.write("\nComplete tables (all KPIs and proof of the mechanism per round) in `" + "`, `".join(f"{level_name(nv)}/{prof}/a-vs-b.md" for nv in levels)
+        fh.write("\nComplete tables (all KPIs and proof of the mechanism per round) in `" + "`, `".join(f"{level_name(nv)}/{profile}/a-vs-b.md" for nv in levels)
                  + "`.\n\n")
 
         fh.write("## Limitations to declare\n\n")
@@ -1584,7 +1584,7 @@ def emit_highlight(output, prof, per_level, levels, dest):
                 w.writerow(row)
 
     with open(os.path.join(output, name_str + ".json"), "w", encoding="utf-8") as fh:
-        json.dump({"profile": prof, "background_levels_pct": levels, "rounds": n_rounds,
+        json.dump({"profile": profile, "background_levels_pct": levels, "rounds": n_rounds,
                    "gain": dest["gain"], "cost": dest["cost"]}, fh, indent=2)
     return name_str
 
@@ -1718,57 +1718,57 @@ def keep_awake():
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def report(args, output, prof, levels, legacy, t0):
+def report(args, output, profile, levels, legacy, t0):
     """Compares and writes the reports of ONE profile. Returns the exit code."""
     per_level, pairs, totals = {}, {}, {}
     for nv in levels:
-        root = level_root(output, prof, nv, legacy)
-        res = compare(root, prof, nv) if os.path.isdir(root) else None
+        root = level_root(output, profile, nv, legacy)
+        res = compare(root, profile, nv) if os.path.isdir(root) else None
         if not res:
             continue
         per_level[nv] = res
-        pairs[nv] = emit(root, prof, res, args, nv)
+        pairs[nv] = emit(root, profile, res, args, nv)
         totals[nv] = len(res["lines"])
     if not per_level:
-        print(f"\n{RED}A x B CAMPAIGN NOT COMPLETED{RESET} ({prof}) -- no round in {output}")
+        print(f"\n{RED}A x B CAMPAIGN NOT COMPLETED{RESET} ({profile}) -- no round in {output}")
         return 1
 
     if legacy:
         show(per_level[0], pairs[0])
-        print(f"\n  Files in {level_root(output, prof, 0, True)}: a-vs-b.md, "
+        print(f"\n  Files in {level_root(output, profile, 0, True)}: a-vs-b.md, "
               "a-vs-b-per-round.csv, a-vs-b.json")
     else:
         dest = compare_levels(per_level, levels)
-        name_str = emit_highlight(output, prof, per_level, levels, dest)
+        name_str = emit_highlight(output, profile, per_level, levels, dest)
         show_highlight(levels, dest)
         print(f"\n  Highlight in {output}: {name_str}.md, .csv, .json")
         print("  Complete tables per level: "
-              + ", ".join(f"{level_name(nv)}/{prof}/a-vs-b.md" for nv in per_level))
+              + ", ".join(f"{level_name(nv)}/{profile}/a-vs-b.md" for nv in per_level))
 
     elapsed = f"{time.time() - t0:.0f}s"
     if legacy:
         n_pairs, total = pairs[0], totals[0]
         if n_pairs == 0:
-            print(f"\n{RED}A x B CAMPAIGN WITHOUT A VALID PAIR{RESET} ({prof}) -- {total} round(s), "
+            print(f"\n{RED}A x B CAMPAIGN WITHOUT A VALID PAIR{RESET} ({profile}) -- {total} round(s), "
                   f"none with valid A and B ({elapsed})")
             return 1
         if n_pairs < total:
-            print(f"\n{YELLOW}A x B CAMPAIGN WITH FAILURES{RESET} ({prof}) -- {n_pairs} of {total} "
+            print(f"\n{YELLOW}A x B CAMPAIGN WITH FAILURES{RESET} ({profile}) -- {n_pairs} of {total} "
                   f"round(s) with a valid pair ({elapsed})")
             return 1
-        print(f"\n{GREEN}A x B CAMPAIGN COMPLETED{RESET} ({prof}) -- {n_pairs} valid pair(s) ({elapsed})")
+        print(f"\n{GREEN}A x B CAMPAIGN COMPLETED{RESET} ({profile}) -- {n_pairs} valid pair(s) ({elapsed})")
         return 0
     summ = ", ".join(f"{level_label(nv)} {pairs[nv]}/{totals[nv]}" for nv in per_level)
     if not any(pairs.values()):
-        print(f"\n{RED}A x B CAMPAIGN WITHOUT A VALID PAIR{RESET} ({prof}) -- valid pairs: {summ} ({elapsed})")
+        print(f"\n{RED}A x B CAMPAIGN WITHOUT A VALID PAIR{RESET} ({profile}) -- valid pairs: {summ} ({elapsed})")
         return 1
     lacking = [nv for nv in levels if nv not in per_level]
     if any(pairs[nv] < totals[nv] for nv in per_level) or lacking:
-        print(f"\n{YELLOW}A x B CAMPAIGN WITH FAILURES{RESET} ({prof}) -- valid pairs: {summ}"
+        print(f"\n{YELLOW}A x B CAMPAIGN WITH FAILURES{RESET} ({profile}) -- valid pairs: {summ}"
               + (f"; no result: {', '.join(level_label(nv) for nv in lacking)}" if lacking else "")
               + f" ({elapsed})")
         return 1
-    print(f"\n{GREEN}A x B CAMPAIGN COMPLETED{RESET} ({prof}) -- valid pairs: {summ} ({elapsed})")
+    print(f"\n{GREEN}A x B CAMPAIGN COMPLETED{RESET} ({profile}) -- valid pairs: {summ} ({elapsed})")
     return 0
 
 
@@ -1888,9 +1888,9 @@ def main():
             print(f"{YELLOW}the default folder already has another campaign "
                   f"({', '.join(level_label(x) for x in existing)}); this one goes to "
                   f"{os.path.relpath(output, BASE)}{RESET}")
-        for prof in profiles:
+        for profile in profiles:
             for nv in levels:
-                os.makedirs(level_root(output, prof, nv, legacy), exist_ok=True)
+                os.makedirs(level_root(output, profile, nv, legacy), exist_ok=True)
         rec_entry = open_record(output, args, profiles, levels)
         keep_awake()
         available = shutil.disk_usage(output).free
@@ -1903,10 +1903,10 @@ def main():
         _capacities.extend(recorded_capacities(output))
         try:
             ip_srv = prepare_background(args, levels, legacy, profiles)
-            for i, prof in enumerate(profiles, 1):
+            for i, profile in enumerate(profiles, 1):
                 if len(profiles) > 1:
-                    print(f"\n{'=' * 72}\n= PROFILE {i} of {len(profiles)}: {prof}\n{'=' * 72}")
-                rounds(args, output, levels, legacy, prof, ip_srv)
+                    print(f"\n{'=' * 72}\n= PROFILE {i} of {len(profiles)}: {profile}\n{'=' * 72}")
+                rounds(args, output, levels, legacy, profile, ip_srv)
         except KeyboardInterrupt:
             stopped_at = "interrupted"
             print(f"\n{YELLOW}interrupted{RESET}: run the same command to continue from where it stopped",
@@ -1922,10 +1922,10 @@ def main():
 
     args._legacy = legacy
     exit_codes = {}
-    for prof in profiles:
+    for profile in profiles:
         if len(profiles) > 1:
-            print(f"\n{'#' * 72}\n# RESULT: {prof}\n{'#' * 72}")
-        exit_codes[prof] = report(args, output, prof, levels, legacy, t0)
+            print(f"\n{'#' * 72}\n# RESULT: {profile}\n{'#' * 72}")
+        exit_codes[profile] = report(args, output, profile, levels, legacy, t0)
     exit_code = max([*exit_codes.values(), 1 if stopped_at else 0])
     if rec_entry:
         close_record(*rec_entry, {"stopped_at": stopped_at, "exit_code_by_profile": exit_codes,

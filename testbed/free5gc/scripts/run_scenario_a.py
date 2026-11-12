@@ -391,7 +391,7 @@ def p02_validate(args):
 # 03 deployment
 # --------------------------------------------------------------------------
 def p03_deploy(args):
-    step(3, f"Deployment of Scenario A + load profile '{args.prof}'",
+    step(3, f"Deployment of Scenario A + load profile '{args.profile}'",
           """Calls deploy.py up a, which removes the user plane of Scenario B (otherwise
     an I-UPF and a PSA-UPF stay associated with the SMF and the proof of step 11
     measures the wrong topology), applies the common control plane, the central UPF,
@@ -487,8 +487,8 @@ def _apply_profile(args):
     The MEC x remote comparison only holds if the load is identical on both sides;
     a rollout that took on one and not on the other produces a table that looks good
     and is wrong."""
-    perf = PROFILES[args.prof]
-    info(f"{args.prof}: {perf['bitrate_mbps']} Mbps @ {perf['fps']} fps, "
+    perf = PROFILES[args.profile]
+    info(f"{args.profile}: {perf['bitrate_mbps']} Mbps @ {perf['fps']} fps, "
          f"pose {perf['pose_hz']} Hz, MTU {perf['mtu']} B")
     for line in textwrap.wrap(perf["description"], 68):
         print(f"       {GREY}{line}{RESET}")
@@ -509,7 +509,7 @@ def _apply_profile(args):
         kubectl("set", "env", f"deploy/{deploy}", "-c", "vr-server",
                 f"VR_BITRATE_MBPS={perf['bitrate_mbps']}",
                 f"VR_FPS={perf['fps']}", f"VR_MTU={perf['mtu']}",
-                f"VR_PROFILE={args.prof}", quiet=True)
+                f"VR_PROFILE={args.profile}", quiet=True)
         run(["kubectl", "-n", NS, "rollout", "status", f"deploy/{deploy}",
              "--timeout=180s"], check=False, quiet=True, timeout=200)
 
@@ -540,7 +540,7 @@ def _apply_profile(args):
         wait_for("both vr-servers on the new profile", cond, 240)
     except Failure as e:
         raise Failure(
-            f"the profile '{args.prof}' did not reach both vr-servers.\n"
+            f"the profile '{args.profile}' did not reach both vr-servers.\n"
             f"       {e}\n"
             "       Without both at the SAME load, the MEC x remote comparison does not "
             "measure the UPF, it measures the difference of load.") from None
@@ -548,7 +548,7 @@ def _apply_profile(args):
     for deploy, v in seen.items():
         print(f"       {deploy:<22} {v['pkts']} pkt/frame x {v['mtu']} B x "
               f"{v['fps']} fps = {v['mbps']:.1f} Mbps  ({v['pod']})")
-    ok(f"profile '{args.prof}' active and identical on both paths "
+    ok(f"profile '{args.profile}' active and identical on both paths "
        f"({target_mbps:.1f} effective Mbps)")
 
 
@@ -1177,11 +1177,11 @@ def delta(before, after):
     return {k: after[k] - before[k] for k in before}
 
 
-def vr_client(target_ip, ue_ip, dur, label, warmup, csv=None, jsonf=None,
+def vr_client(target_ip, ue_ip, duration, label, warmup, csv=None, jsonf=None,
               timeout_extra=60, pose_hz=None):
     cmd = ["python3", "/opt/vr/vr_client.py",
            "--server", f"{target_ip}:{VR_PORT}", "--bind", ue_ip,
-           "--duration", str(dur), "--warmup", str(warmup), "--label", label]
+           "--duration", str(duration), "--warmup", str(warmup), "--label", label]
     # The pose is part of the PROFILE (the control loop of the use case), so it
     # comes as an argument and not from VR_POSE_HZ of the container -- otherwise changing
     # scenario would change the media and leave the uplink at the value of another case.
@@ -1192,7 +1192,7 @@ def vr_client(target_ip, ue_ip, dur, label, warmup, csv=None, jsonf=None,
     if jsonf:
         cmd += ["--json", jsonf]
     r = kexec(TESTER_POD, "vr-client", *cmd, check=False,
-              timeout=dur + timeout_extra)
+              timeout=duration + timeout_extra)
     try:
         raw_value = r.stdout
         summ = json.loads(raw_value[raw_value.index("{"):raw_value.rindex("}") + 1])
@@ -1269,7 +1269,7 @@ def p11_anchor_proof(ue_ip, args):
         before = {k: gtp_counters(d) for k, (d, _) in UPFS.items()}
         info(f"generating {args.proof_duration}s of traffic to {tgt} ({name_str})")
         summ = vr_client(tgt, ue_ip, args.proof_duration, f"proof-{name_str}",
-                           warmup=1, pose_hz=PROFILES[args.prof]["pose_hz"])
+                           warmup=1, pose_hz=PROFILES[args.profile]["pose_hz"])
         after = {k: gtp_counters(d) for k, (d, _) in UPFS.items()}
         d = {k: delta(before[k], after[k]) for k in before}
         outcomes[name_str] = {"delta": d, "frames": summ["frames_complete"],
@@ -1348,7 +1348,7 @@ LOCAL_DROP_THRESHOLD_PCT = 0.5
 
 
 def p12_campaign(ue_ip, args, idx=1):
-    step(12, f"VR measurement campaign ({args.dur}s per path)",
+    step(12, f"VR measurement campaign ({args.duration}s per path)",
           """Runs the real VR load against both destinations, with the same profile.
 
     Reports net_rtt (uplink out + downlink back -- the part that the placement of the
@@ -1387,10 +1387,10 @@ def p12_campaign(ue_ip, args, idx=1):
         # received and did not deliver to the server".
         g0 = {k: gtp_counters(d) for k, (d, _) in UPFS.items()}
         g0["ue-tun"] = tun_counters()
-        info(f"{name_str}: {args.dur}s against {tgt}")
-        summ = vr_client(tgt, ue_ip, args.dur, name_str, warmup=args.warmup,
+        info(f"{name_str}: {args.duration}s against {tgt}")
+        summ = vr_client(tgt, ue_ip, args.duration, name_str, warmup=args.warmup,
                            csv=f"/data/{name_str}.csv", jsonf=f"/data/{name_str}.json",
-                           pose_hz=PROFILES[args.prof]["pose_hz"])
+                           pose_hz=PROFILES[args.profile]["pose_hz"])
         m1 = server_metrics(deploy)
         g1 = {k: gtp_counters(d) for k, (d, _) in UPFS.items()}
         g1["ue-tun"] = tun_counters()
@@ -1926,9 +1926,9 @@ def write_markdown(path_name, executions, discarded, args):
     n = len(executions)
     placement = executions[0].get("placement", {})
     with open(path_name, "w", encoding="utf-8") as fh:
-        prof = getattr(args, "profile", DEFAULT_PROFILE)
-        pf = PROFILES.get(prof, {})
-        fh.write(f"# Scenario A - centralized UPF (baseline) - profile `{prof}`\n\n")
+        profile = getattr(args, "profile", DEFAULT_PROFILE)
+        pf = PROFILES.get(profile, {})
+        fh.write(f"# Scenario A - centralized UPF (baseline) - profile `{profile}`\n\n")
         if pf:
             fh.write(f"**Load:** {pf['bitrate_mbps']} Mbps @ {pf['fps']} fps "
                      f"per session (downlink), pose/control at {pf['pose_hz']} Hz "
@@ -1937,7 +1937,7 @@ def write_markdown(path_name, executions, discarded, args):
         fh.write(f"Campaign of **{n} independent execution(s)**. Each execution "
                  "brings the scenario up from zero, measures and tears down the deployments before the "
                  "next one.\n\n")
-        fh.write(f"- Duration per path: {args.dur:g} s "
+        fh.write(f"- Duration per path: {args.duration:g} s "
                  f"(the first {args.warmup:g} s discarded)\n")
         fh.write("- Load: VR application (downlink of frames + uplink of poses), "
                  "identical on both paths\n")
@@ -2019,9 +2019,9 @@ def write_markdown(path_name, executions, discarded, args):
 
 
 def campaign_report(executions, failures, args):
-    prof = getattr(args, "profile", DEFAULT_PROFILE)
-    pf = PROFILES.get(prof, {})
-    step(99, f"CAMPAIGN SUMMARY - profile '{prof}' "
+    profile = getattr(args, "profile", DEFAULT_PROFILE)
+    pf = PROFILES.get(profile, {})
+    step(99, f"CAMPAIGN SUMMARY - profile '{profile}' "
               f"({pf.get('bitrate_mbps', '?')} Mbps @ {pf.get('fps', '?')} fps, "
               f"pose {pf.get('pose_hz', '?')} Hz)")
 
@@ -2066,7 +2066,7 @@ def campaign_report(executions, failures, args):
         json.dump({"profile": getattr(args, "profile", None),
                    "workload": PROFILES.get(getattr(args, "profile", ""), {}),
                    "executions": executions, "failures": failures,
-                   "duration_s": args.dur, "warmup_s": args.warmup,
+                   "duration_s": args.duration, "warmup_s": args.warmup,
                    "repetitions": args.repetitions}, fh, indent=2)
 
     if not use_:
@@ -2130,18 +2130,18 @@ def _scenario_table(summ, root):
     print(f"  {'scenario':<16}{'load':>16}{'exec':>6}{'failures':>8}")
     print(f"  {'-' * 16}{'-' * 16}{'-' * 6}{'-' * 8}")
     lines = []
-    for prof, n_exec, n_failures, gain in summ:
-        p = PROFILES[prof]
+    for profile, n_exec, n_failures, gain in summ:
+        p = PROFILES[profile]
         workload = f"{p['bitrate_mbps']} Mbps/{p['fps']}fps"
         if gain is None:
             cell = "-"
-            lines.append((prof, workload, n_exec, n_failures, "", "", ""))
+            lines.append((profile, workload, n_exec, n_failures, "", "", ""))
         else:
             us, pct, n = gain
             cell = f"{us / 1000:.3f} ms ({pct:.1f}%)"
-            lines.append((prof, workload, n_exec, n_failures,
+            lines.append((profile, workload, n_exec, n_failures,
                            f"{us / 1000:.4f}", f"{pct:.2f}", n))
-        print(f"  {prof:<16}{workload:>16}{n_exec:>6}{n_failures:>8}")
+        print(f"  {profile:<16}{workload:>16}{n_exec:>6}{n_failures:>8}")
     print(f"\n  {GREY}The comparison with Scenario B comes from campaign.py.{RESET}")
 
     os.makedirs(root, exist_ok=True)
@@ -2149,13 +2149,13 @@ def _scenario_table(summ, root):
     with open(path_name, "w", encoding="utf-8") as fh:
         fh.write("scenario,bitrate_mbps,fps,pose_hz,executions,failures,"
                  "gain_net_p50_ms,gain_pct,valid_executions\n")
-        for prof, workload, n_exec, n_failures, g_ms, g_pct, n_val in lines:
-            p = PROFILES[prof]
-            fh.write(f"{prof},{p['bitrate_mbps']},{p['fps']},{p['pose_hz']},"
+        for profile, workload, n_exec, n_failures, g_ms, g_pct, n_val in lines:
+            p = PROFILES[profile]
+            fh.write(f"{profile},{p['bitrate_mbps']},{p['fps']},{p['pose_hz']},"
                      f"{n_exec},{n_failures},{g_ms},{g_pct},{n_val}\n")
     print(f"\n  Comparison between scenarios: {path_name}")
-    for prof, *_ in summ:
-        print(f"    {os.path.join(root, prof)}/")
+    for profile, *_ in summ:
+        print(f"    {os.path.join(root, profile)}/")
 
 
 # --------------------------------------------------------------------------
@@ -2278,7 +2278,7 @@ def main():
         ap.error("--repetitions must be >= 1")
     if args.attempts < 1:
         ap.error("--attempts must be >= 1")
-    profiles = [x.strip() for x in args.prof.split(",") if x.strip()]
+    profiles = [x.strip() for x in args.profile.split(",") if x.strip()]
     unknown = [x for x in profiles if x not in PROFILES]
     if unknown:
         ap.error("unknown profile: " + ", ".join(unknown)
@@ -2306,7 +2306,7 @@ def main():
     if len(profiles) > 1:
         print(f"\n{'#' * 72}\n# {len(profiles)} SCENARIOS: " + ", ".join(profiles)
               + f"\n# {args.repetitions} execution(s) each, "
-              f"{args.dur:g}s per path\n{'#' * 72}")
+              f"{args.duration:g}s per path\n{'#' * 72}")
 
     # One COMPLETE campaign per profile, each in its own folder. Running in series and
     # not interleaved is on purpose: interleaving scenarios would make the difference
@@ -2316,23 +2316,23 @@ def main():
     # initialized here too, and not only inside the loop of profiles:
     # the final summary reads this variable after the loop.
     interrupted = False
-    for prof in profiles:
+    for profile in profiles:
         args_p = argparse.Namespace(**vars(args))
-        args_p.prof = prof
+        args_p.profile = profile
         # The folder carries the NAME OF THE SCENARIO: campaigns of different profiles
         # coexist without one deleting the other, and the name of the directory already says
         # which load produced those numbers.
-        args_p.output = os.path.join(args.output, prof)
+        args_p.output = os.path.join(args.output, profile)
 
         if len(profiles) > 1:
-            print(f"\n{'#' * 72}\n# SCENARIO: {prof}\n"
-                  f"# {PROFILES[prof]['bitrate_mbps']} Mbps @ "
-                  f"{PROFILES[prof]['fps']} fps, pose "
-                  f"{PROFILES[prof]['pose_hz']} Hz -> {args_p.output}\n"
+            print(f"\n{'#' * 72}\n# SCENARIO: {profile}\n"
+                  f"# {PROFILES[profile]['bitrate_mbps']} Mbps @ "
+                  f"{PROFILES[profile]['fps']} fps, pose "
+                  f"{PROFILES[profile]['pose_hz']} Hz -> {args_p.output}\n"
                   f"{'#' * 72}")
         elif args.repetitions > 1:
-            print(f"\n{'#' * 72}\n# CAMPAIGN '{prof}': {args.repetitions} "
-                  f"executions of {args.dur:g}s per path\n"
+            print(f"\n{'#' * 72}\n# CAMPAIGN '{profile}': {args.repetitions} "
+                  f"executions of {args.duration:g}s per path\n"
                   f"# each execution: deployment -> measurement -> collection -> teardown\n"
                   f"# results in {args_p.output}\n{'#' * 72}")
 
@@ -2341,7 +2341,7 @@ def main():
         consecutive = 0    # consecutive failures; 3 of them = systemic problem
         for i in range(1, args.repetitions + 1):
             if args.repetitions > 1:
-                print(f"\n{'#' * 72}\n# [{prof}] EXECUTION {i} of {args.repetitions}"
+                print(f"\n{'#' * 72}\n# [{profile}] EXECUTION {i} of {args.repetitions}"
                       f"{'  (' + str(len(failures)) + ' failure(s) so far)' if failures else ''}"
                       f"\n{'#' * 72}")
             run_output = os.path.join(args_p.output, f"run-{i:02d}")
@@ -2359,7 +2359,7 @@ def main():
                 try:
                     res = execute_once(args_p, i, run_output, deploy_up)
                     res["seconds"] = round(time.time() - t_run, 1)
-                    res["profile"] = prof
+                    res["profile"] = profile
                     res["attempts"] = att
                     err = None
                 except PermanentFailure as e:
@@ -2383,7 +2383,7 @@ def main():
                 if interrupted or err is None or permanent:
                     break
                 if att < args.attempts:
-                    print(f"\n{YELLOW}[{prof}] execution {i}: attempt {att} of "
+                    print(f"\n{YELLOW}[{profile}] execution {i}: attempt {att} of "
                           f"{args.attempts} failed{RESET} ({err.splitlines()[0]})"
                           f"\n  redoing the scenario from zero...", file=sys.stderr)
             if interrupted:
@@ -2400,7 +2400,7 @@ def main():
             else:
                 # 'tent', and not args.attempts: a PermanentFailure leaves at the
                 # first one, and saying "after 2 attempts" would be false.
-                print(f"\n{RED}[{prof}] EXECUTION {i} FAILED{RESET} after "
+                print(f"\n{RED}[{profile}] EXECUTION {i} FAILED{RESET} after "
                       f"{att} attempt(s): {err}", file=sys.stderr)
                 failures.append((i, err))
                 consecutive += 1
@@ -2409,20 +2409,20 @@ def main():
             # database). Insisting only burns another hour of deployment to collect the
             # same error.
             if consecutive >= 3 and args.repetitions > 3:
-                print(f"\n{RED}3 consecutive executions failed in '{prof}' -- "
+                print(f"\n{RED}3 consecutive executions failed in '{profile}' -- "
                       f"aborting this scenario.{RESET}", file=sys.stderr)
                 break
 
         if not executions:
-            print(f"\n{RED}[{prof}] no execution completed.{RESET}",
+            print(f"\n{RED}[{profile}] no execution completed.{RESET}",
                   file=sys.stderr)
-            scenario_summary.append((prof, 0, len(failures), None))
+            scenario_summary.append((profile, 0, len(failures), None))
             overall_result = 1
         else:
             campaign_report(executions, failures, args_p)
             valid_n = [e for e in executions
                        if not [1 for sc, _ in e["warnings"] if sc == "campaign"]]
-            scenario_summary.append((prof, len(executions), len(failures),
+            scenario_summary.append((profile, len(executions), len(failures),
                                     _mean_gain(valid_n)))
             if failures:
                 overall_result = 1
