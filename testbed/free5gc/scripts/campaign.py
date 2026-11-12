@@ -1827,7 +1827,7 @@ def main():
         ap.error("--background accepts integers separated by commas, e.g. 0,80,95")
     if not levels or min(levels) < 0 or max(levels) >= 100:
         ap.error("--background: each level in [0, 100) -- nothing above the capacity")
-    requests = list(dict.fromkeys(p.strip() for p in (args.prof or "").split(",") if p.strip()))
+    requests = list(dict.fromkeys(p.strip() for p in (args.profile or "").split(",") if p.strip()))
 
     t0 = time.time()
     rec_entry, stopped_at = None, None
